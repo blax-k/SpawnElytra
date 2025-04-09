@@ -1,0 +1,64 @@
+# Spawn Elytra Plugin by Blaxk_
+# Plugin Version: 1.2
+# Modrinth: https://modrinth.com/plugin/spawn-elytra
+
+# Activation mode for elytra:
+# double_jump: Player needs to double-press space to activate elytra
+# auto: Automatically activates elytra when player has air below and is in spawn area
+activation_mode: double_jump
+
+# Mode options: 'auto' or 'advanced'
+# auto: Uses the world spawn point
+# advanced: Uses custom spawn coordinates defined below
+mode: auto
+
+# The radius around spawn where elytra boosting is enabled
+# (only used in auto mode or if x2, y2, z2 are all set to 0)
+radius: 100
+
+# The strength of the boost when pressing the boost key
+strength: 2
+
+# The world where the spawn elytra feature is enabled
+world: world
+
+# Custom spawn coordinates and dimensions (used when mode is 'advanced')
+spawn:
+  # First point of the elytra area
+  x: 0
+  y: 64
+  z: 0
+
+  # Second point of the elytra area
+  # Setting all x2/y2/z2 to 0 will use the radius-based circular area instead
+  # Example: Using x=0, y=64, z=0 and x2=100, y2=128, z2=100 creates a rectangular area
+  # between those two coordinate points
+  x2: 0  # Second X coordinate
+  y2: 0  # Second Y coordinate
+  z2: 0  # Second Z coordinate
+
+# Boost sound effect - can be any sound from https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html
+# Examples: ENTITY_BAT_TAKEOFF, ENTITY_FIREWORK_ROCKET_BLAST, ITEM_ELYTRA_FLYING
+boost_sound: ENTITY_BAT_TAKEOFF
+
+# Available languages: en, de, es, fr, hi, zh, ar
+language: de
+
+# Automatically disable elytra when player enters creative mode (This prevents buggy flying in Creative)
+disable_in_creative: true
+
+# Message settings
+messages:
+  # Set to false to disable the "press to boost" message
+  show_press_to_boost: true
+  # Set to false to disable the "boost activated" message
+  show_boost_activated: true
+  # Set to true to use custom messages below instead of language file messages
+  use_custom_messages: false
+
+  # Custom messages
+  # {key} is used represent the offhand key (F by default)
+  # Due to limitations from minecraft, you cant enter any key you want.
+  # Legacy color codes (&a, &e, etc.) are supported
+  press_to_boost: '&6Press &6&l{key} &6to boost yourself.'
+  boost_activated: '&a&lBoost activated!'
