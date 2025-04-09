@@ -1,0 +1,11 @@
+# Arabic language file
+press_to_boost: "<gradient:gold:yellow>اضغط</gradient> <bold><yellow>{key}</yellow></bold> <gradient:gold:yellow>للانطلاق.</gradient>"
+boost_activated: "<gradient:dark_green:green>تم تنشيط الدفع!</gradient>"
+new_version_available: "<gradient:aqua:blue>يتوفر إصدار جديد من إضافة سبون إليترا!</gradient>"
+update_to_version: "<yellow>يرجى التحديث إلى الإصدار <green>{latestVersion}</green> <gray>(الإصدار الحالي: <red>{currentVersion}</red>)</gray></yellow>"
+download_link: "<aqua>رابط التحميل:</aqua>"
+failed_update_check: "<red>فشل التحقق من التحديثات: {errorMessage}</red>"
+update_downloaded: "<gradient:green:lime>تم تنزيل التحديث بنجاح!</gradient> <yellow>أعد تشغيل الخادم لتطبيق التحديث.</yellow>"
+update_failed: "<red>فشل تنزيل التحديث: {errorMessage}</red>"
+update_auto_enabled: "<yellow>التحديث التلقائي مفعل. سيتم تحديث الإضافة تلقائيًا.</yellow>"
+creative_mode_elytra_disabled: "<yellow>تم تعطيل طيران الإليترا في وضع الإبداع.</yellow>"

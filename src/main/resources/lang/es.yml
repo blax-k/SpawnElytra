@@ -1,0 +1,8 @@
+# Spanish language file
+press_to_boost: "&6Presiona &e&l{key} &6para impulsarte."
+boost_activated: "&a&l¡Impulso activado!"
+new_version_available: "&b¡Una nueva versión de Spawn Elytra está disponible!"
+update_to_version: "&ePor favor, actualiza a la versión &a{latestVersion} &7(actual: &c{currentVersion}&7)"
+download_link: "&bEnlace de descarga:"
+failed_update_check: "&cError al comprobar actualizaciones: {errorMessage}"
+creative_mode_elytra_disabled: "&eVuelo con elytra desactivado en modo Creativo."

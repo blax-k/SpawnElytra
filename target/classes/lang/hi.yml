@@ -1,0 +1,8 @@
+# Hindi language file
+press_to_boost: "&6दबाएं &e&l{key} &6खुद को बूस्ट करने के लिए।"
+boost_activated: "&a&lबूस्ट सक्रिय!"
+new_version_available: "&bस्पॉन एलिट्रा का एक नया संस्करण उपलब्ध है!"
+update_to_version: "&eकृपया संस्करण &a{latestVersion} &7पर अपडेट करें (वर्तमान: &c{currentVersion}&7)"
+download_link: "&bडाउनलोड लिंक:"
+failed_update_check: "&cअपडेट की जांच करने में विफल: {errorMessage}"
+creative_mode_elytra_disabled: "&eक्रिएटिव मोड में एलिट्रा उड़ान अक्षम।"
