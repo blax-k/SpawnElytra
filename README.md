@@ -3,6 +3,7 @@
 ![Spawn Elytra](https://cdn.modrinth.com/data/cached_images/5df9a92fc92fc69760897e41dce2fc254ce90c10.png)
 
 ![Downloads](https://img.shields.io/modrinth/dt/Egw2R8Fj?logo=modrinth&style=flat&label=Downloads&color=38B541)
+![CodeFactor](https://www.codefactor.io/repository/github/blaxkkkk/spawnelytra/badge)
 
 _Players can use an Elytra-like feature while in spawn and when leaving spawn.
 You can boost yourself once by pressing the offhand button._
