@@ -125,4 +125,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Feel free to give Ideas :)
 
 ## Known Bugs
-- Rectangular Based Spawn Radius
+- Rectangular Based Spawn Radius (Fixed, will be rolled out soon)
