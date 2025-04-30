@@ -95,17 +95,6 @@ messages:
 - `/spawnelytra info` - Get info about the Plugin
   - Permission: `spawnelytra.admin`
 
-Permissions:
-  spawnelytra.admin:
-    description: Allows access to admin commands
-    default: op
-  spawnelytra.use:
-    description: Allows players to use the elytra boost feature
-    default: true
-  spawnelytra.useboost:
-    description: Allows players to use the boost feature
-    default: true
-
 ## Support
 
 If you encounter any issues while using the plugin, please [create an issue](https://github.com/blaxkkkk/CraftAttackSpawnElytra/issues) on GitHub.
