@@ -91,9 +91,20 @@ messages:
 ## Commands and Permissions
 
 - `/spawnelytra reload` - Reloads the plugin configuration
-  - Permission: `spawnelytra.reload`
-- `/spawnelytra toggle` - Toggles spawn elytra feature for yourself
-  - Permission: `spawnelytra.toggle`
+  - Permission: `spawnelytra.admin`
+- `/spawnelytra info` - Get info about the Plugin
+  - Permission: `spawnelytra.admin`
+
+Permissions:
+  spawnelytra.admin:
+    description: Allows access to admin commands
+    default: op
+  spawnelytra.use:
+    description: Allows players to use the elytra boost feature
+    default: true
+  spawnelytra.useboost:
+    description: Allows players to use the boost feature
+    default: true
 
 ## Support
 
