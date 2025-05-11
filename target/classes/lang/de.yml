@@ -1,8 +1,0 @@
-# German language file
-press_to_boost: "&6Drücke &e&l{key} &6um dich zu boosten"
-boost_activated: "&a&lBoost aktiviert!"
-new_version_available: "&bEine neue Version von Spawn Elytra ist verfügbar!"
-update_to_version: "&eBitte aktualisiere auf Version &a{latestVersion} &7(aktuell: &c{currentVersion}&7)"
-download_link: "&bDownload-Link:"
-failed_update_check: "&cFehler beim Überprüfen auf Updates: {errorMessage}"
-creative_mode_elytra_disabled: "&eElytra-Flug im Kreativmodus deaktiviert."

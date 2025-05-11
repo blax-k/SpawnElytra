@@ -1,8 +1,0 @@
-# Chinese language file
-press_to_boost: "&6按下 &e&l{key} &6来加速自己。"
-boost_activated: "&a&l加速已激活！"
-new_version_available: "&bSpawn Elytra 插件有新版本可用！"
-update_to_version: "&e请更新到版本 &a{latestVersion} &7(当前版本: &c{currentVersion}&7)"
-download_link: "&b下载链接:"
-failed_update_check: "&c检查更新失败: {errorMessage}"
-creative_mode_elytra_disabled: "&e创造模式下已禁用鞘翅飞行。"
