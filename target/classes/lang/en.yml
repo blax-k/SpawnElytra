@@ -1,8 +1,0 @@
-# English language file
-press_to_boost: "&6Press &e&l{key} &6to boost yourself"
-boost_activated: "&a&lBoost activated!"
-new_version_available: "&bA new version of Spawn Elytra is available!"
-update_to_version: "&ePlease update to version &a{latestVersion} &7(current: &c{currentVersion}&7)"
-download_link: "&bDownload link:"
-failed_update_check: "&cFailed to check for updates: {errorMessage}"
-creative_mode_elytra_disabled: "&eElytra flight disabled in Creative mode."
