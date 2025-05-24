@@ -8,10 +8,10 @@ import org.jetbrains.annotations.NotNull;
  * SpawnElytra PlaceholderAPI expansion
  */
 public class SpawnElytraExpansion extends PlaceholderExpansion {
-    private final main plugin;
+    private final Main plugin;
     private final PlayerDataManager playerDataManager;
 
-    public SpawnElytraExpansion(main plugin, PlayerDataManager playerDataManager) {
+    public SpawnElytraExpansion(Main plugin, PlayerDataManager playerDataManager) {
         this.plugin = plugin;
         this.playerDataManager = playerDataManager;
     }

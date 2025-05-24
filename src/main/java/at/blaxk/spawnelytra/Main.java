@@ -14,8 +14,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public final class main extends JavaPlugin {
-    public static main plugin;
+public final class Main extends JavaPlugin {
+    public static Main plugin;
     public static int radius;
     public static int strength;
     public static String world;
@@ -24,7 +24,7 @@ public final class main extends JavaPlugin {
     public static int spawny;
     public static int spawnz;
     public static boolean disableInCreative;
-    private static final String CURRENT_VERSION = "1.2";
+    private static final String CURRENT_VERSION = "1.2.1";
     private static final String MODRINTH_PROJECT_ID = "Egw2R8Fj";
     private PlayerDataManager playerDataManager;
 
