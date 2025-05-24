@@ -20,7 +20,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.event.player.PlayerMoveEvent;
 
 public class SpawnElytra extends BukkitRunnable implements Listener {
-    private final main plugin;
+    private final Main plugin;
     private final int multiplyValue;
     private final int spawnRadius;
     private final boolean boostEnabled;
@@ -31,6 +31,7 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
     private final Location spawnLocation;
     private final Sound boostSound;
     private final boolean disableInCreative;
+    private final boolean disableInAdventure; // Suggestion by 1Pio ^^
     private final PlayerDataManager playerDataManager;
 
     private final String activationMode;
@@ -38,12 +39,13 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
     private final double maxX, maxY, maxZ;
     private final boolean useRectangularArea;
 
-    public SpawnElytra(main plugin) {
+    public SpawnElytra(Main plugin) {
         this.plugin = plugin;
         this.multiplyValue = plugin.getConfig().getInt("strength");
         this.spawnRadius = plugin.getConfig().getInt("radius");
         this.boostEnabled = true;
         this.disableInCreative = plugin.getConfig().getBoolean("disable_in_creative", true);
+        this.disableInAdventure = plugin.getConfig().getBoolean("disable_in_adventure", true);
         this.playerDataManager = plugin.getPlayerDataManager();
 
         this.activationMode = plugin.getConfig().getString("activation_mode", "double_jump").toLowerCase();
@@ -189,7 +191,7 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
                 return;
             }
 
-            if (player.getGameMode() == GameMode.SURVIVAL) {
+            if (isElytraAllowedInMode(player)) {
                 player.setAllowFlight(this.isInSpawnArea(player));
 
                 if (this.flying.contains(player) && !player.isGliding()) {
@@ -264,7 +266,7 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
             return;
         }
 
-        if (player.getGameMode() == GameMode.SURVIVAL && this.isInSpawnArea(player)) {
+        if (isElytraAllowedInMode(player) && this.isInSpawnArea(player)) {
             event.setCancelled(true);
 
             if (this.flying.contains(player)) {
@@ -380,5 +382,12 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
         } else {
             return this.spawnLocation.distance(player.getLocation()) <= (double)this.spawnRadius;
         }
+    }
+
+    private boolean isElytraAllowedInMode(Player player) {
+        GameMode mode = player.getGameMode();
+        if (mode == GameMode.SURVIVAL) return true;
+        if (mode == GameMode.ADVENTURE && !disableInAdventure) return true;
+        return false;
     }
 }

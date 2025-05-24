@@ -47,6 +47,9 @@ language: de
 # Automatically disable elytra when player enters creative mode (This prevents buggy flying in Creative)
 disable_in_creative: true
 
+# If you don't want to disable elytra in adventure mode, set this to false
+disable_in_adventure: false
+
 # Message settings
 messages:
   # Set to false to disable the "press to boost" message

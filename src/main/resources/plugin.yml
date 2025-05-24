@@ -1,6 +1,6 @@
 name: CraftAttackSpawnElytra
-version: 1.2
-main: at.blaxk.spawnelytra.main
+version: 1.2.1
+main: at.blaxk.spawnelytra.Main
 description: Players can use an invisible elytra in the spawn when double jumping.
 author: Blaxk_
 website: https://modrinth.com/plugin/spawn-elytra

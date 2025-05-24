@@ -145,6 +145,9 @@ public class ConfigUpdater {
         needsUpdate |= ensureConfigOption(config, "disable_in_creative", true,
                 "Automatically disable elytra when player enters creative mode (This prevents buggy flying in Creative)");
 
+        needsUpdate |= ensureConfigOption(config, "disable_in_adventure", false,
+                "If you don't want to disable elytra in adventure mode, set this to false");
+
         if (!config.contains("messages")) {
             config.createSection("messages");
             needsUpdate = true;
