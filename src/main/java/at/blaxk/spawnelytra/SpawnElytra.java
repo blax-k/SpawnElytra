@@ -1,7 +1,10 @@
 package at.blaxk.spawnelytra;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -14,9 +17,14 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
 import org.bukkit.event.player.PlayerMoveEvent;
 
 public class SpawnElytra extends BukkitRunnable implements Listener {
@@ -31,28 +39,38 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
     private final Location spawnLocation;
     private final Sound boostSound;
     private final boolean disableInCreative;
-    private final boolean disableInAdventure; // Suggestion by 1Pio ^^
+    private final boolean disableInAdventure;
     private final PlayerDataManager playerDataManager;
+    private final String boostDirection;
+    private final boolean disableFireworksInSpawnElytra;
+    private final double fKeyLaunchStrength;
 
     private final String activationMode;
     private final double minX, minY, minZ;
     private final double maxX, maxY, maxZ;
     private final boolean useRectangularArea;
 
+    private final Map<UUID, Long> sneakJumpCooldown = new HashMap<>();
+    private final Map<UUID, Boolean> sneakPressed = new HashMap<>();
+    private final Map<UUID, BukkitTask> visualizationTasks = new HashMap<>();
+
     public SpawnElytra(Main plugin) {
         this.plugin = plugin;
         this.multiplyValue = plugin.getConfig().getInt("strength");
         this.spawnRadius = plugin.getConfig().getInt("radius");
-        this.boostEnabled = true;
+        this.boostEnabled = plugin.getConfig().getBoolean("boost_enabled", true);
         this.disableInCreative = plugin.getConfig().getBoolean("disable_in_creative", true);
         this.disableInAdventure = plugin.getConfig().getBoolean("disable_in_adventure", true);
         this.playerDataManager = plugin.getPlayerDataManager();
+        this.boostDirection = plugin.getConfig().getString("boost_direction", "forward").toLowerCase();
+        this.disableFireworksInSpawnElytra = plugin.getConfig().getBoolean("disable_fireworks_in_spawn_elytra", false);
+        this.fKeyLaunchStrength = plugin.getConfig().getDouble("f_key_launch_strength", 0.8);
 
         this.activationMode = plugin.getConfig().getString("activation_mode", "double_jump").toLowerCase();
 
         String configWorldName = plugin.getConfig().getString("world");
         this.world = Bukkit.getWorld(configWorldName);
-        this.mode = plugin.getConfig().getString("mode", "auto");
+        this.mode = plugin.getConfig().getString("spawn.mode", "auto");
 
         String soundName = plugin.getConfig().getString("boost_sound", "ENTITY_BAT_TAKEOFF");
         Sound configuredSound;
@@ -89,13 +107,13 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
                         plugin.getConfig().contains("spawn.y2") ||
                         plugin.getConfig().contains("spawn.z2")) {
 
-                    double x2 = plugin.getConfig().getDouble("spawn.x2", spawnX);
-                    double y2 = plugin.getConfig().getDouble("spawn.y2", spawnY);
-                    double z2 = plugin.getConfig().getDouble("spawn.z2", spawnZ);
+                    double x2 = plugin.getConfig().getDouble("spawn.x2", 0);
+                    double y2 = plugin.getConfig().getDouble("spawn.y2", 0);
+                    double z2 = plugin.getConfig().getDouble("spawn.z2", 0);
 
-                    boolean useRectArea = (x2 != spawnX || y2 != spawnY || z2 != spawnZ);
+                    boolean allZero = (x2 == 0 && y2 == 0 && z2 == 0);
 
-                    if (useRectArea) {
+                    if (!allZero) {
                         this.minX = Math.min(spawnX, x2);
                         this.maxX = Math.max(spawnX, x2);
 
@@ -106,19 +124,10 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
                         this.maxZ = Math.max(spawnZ, z2);
 
                         this.useRectangularArea = true;
-
-                        plugin.getLogger().info("Using advanced mode with rectangular area: " +
-                                "(" + this.minX + ", " + this.minY + ", " + this.minZ + ") to " +
-                                "(" + this.maxX + ", " + this.maxY + ", " + this.maxZ + ")");
                     } else {
                         this.minX = this.minY = this.minZ = 0;
                         this.maxX = this.maxY = this.maxZ = 0;
                         this.useRectangularArea = false;
-
-                        plugin.getLogger().info("Using advanced mode with radius-based spawn location: " +
-                                this.spawnLocation.getX() + ", " +
-                                this.spawnLocation.getY() + ", " +
-                                this.spawnLocation.getZ());
                     }
                 } else if (plugin.getConfig().contains("spawn.dx") ||
                         plugin.getConfig().contains("spawn.dy") ||
@@ -139,39 +148,21 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
 
                         this.useRectangularArea = true;
 
-                        plugin.getLogger().info("Using advanced mode with rectangular area (legacy format): " +
-                                "(" + this.minX + ", " + this.minY + ", " + this.minZ + ") to " +
-                                "(" + this.maxX + ", " + this.maxY + ", " + this.maxZ + ")");
                     } else {
                         this.minX = this.minY = this.minZ = 0;
                         this.maxX = this.maxY = this.maxZ = 0;
                         this.useRectangularArea = false;
-
-                        plugin.getLogger().info("Using advanced mode with radius-based spawn location: " +
-                                this.spawnLocation.getX() + ", " +
-                                this.spawnLocation.getY() + ", " +
-                                this.spawnLocation.getZ());
                     }
                 } else {
                     this.minX = this.minY = this.minZ = 0;
                     this.maxX = this.maxY = this.maxZ = 0;
                     this.useRectangularArea = false;
-
-                    plugin.getLogger().info("Using advanced mode with radius-based spawn location: " +
-                            this.spawnLocation.getX() + ", " +
-                            this.spawnLocation.getY() + ", " +
-                            this.spawnLocation.getZ());
                 }
             } else {
                 this.spawnLocation = world.getSpawnLocation();
                 this.minX = this.minY = this.minZ = 0;
                 this.maxX = this.maxY = this.maxZ = 0;
                 this.useRectangularArea = false;
-
-                plugin.getLogger().info("Using auto mode with world spawn location: " +
-                        this.spawnLocation.getX() + ", " +
-                        this.spawnLocation.getY() + ", " +
-                        this.spawnLocation.getZ());
             }
         }
 
@@ -179,7 +170,7 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
     }
 
     public void run() {
-        if (!this.boostEnabled || this.world == null) {
+        if (this.world == null) {
             return;
         }
 
@@ -221,6 +212,110 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
         });
     }
 
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        if (!disableFireworksInSpawnElytra) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+        ItemStack item = event.getItem();
+
+        if (this.flying.contains(player) &&
+                item != null &&
+                item.getType() == Material.FIREWORK_ROCKET) {
+
+            ItemStack chestplate = player.getInventory().getChestplate();
+            if (chestplate == null || chestplate.getType() != Material.ELYTRA) {
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    public void visualizeArea(Player player) {
+        if (this.world == null || this.spawnLocation == null) {
+            player.sendMessage(ChatColor.RED + "No valid spawn area configured!");
+            return;
+        }
+
+        if (visualizationTasks.containsKey(player.getUniqueId())) {
+            visualizationTasks.get(player.getUniqueId()).cancel();
+            visualizationTasks.remove(player.getUniqueId());
+        }
+
+        player.sendMessage(ChatColor.GREEN + "Visualizing spawn area for 30 seconds...");
+
+        BukkitTask task = new BukkitRunnable() {
+            private int ticksElapsed = 0;
+            private final int maxTicks = 30 * 20;
+
+            @Override
+            public void run() {
+                if (ticksElapsed >= maxTicks || !player.isOnline()) {
+                    visualizationTasks.remove(player.getUniqueId());
+                    if (player.isOnline()) {
+                        player.sendMessage(ChatColor.YELLOW + "Area visualization ended.");
+                    }
+                    this.cancel();
+                    return;
+                }
+
+                if (ticksElapsed % 10 == 0) {
+                    showAreaParticles(player);
+                }
+
+                ticksElapsed++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
+
+        visualizationTasks.put(player.getUniqueId(), task);
+    }
+
+    private void showAreaParticles(Player player) {
+        if (useRectangularArea) {
+            showRectangularAreaParticles(player);
+        } else {
+            showCircularAreaParticles(player);
+        }
+    }
+
+    private void showCircularAreaParticles(Player player) {
+        Location center = spawnLocation.clone();
+        World world = center.getWorld();
+
+        double playerY = player.getLocation().getY();
+        for (int yOffset = -5; yOffset <= 5; yOffset++) {
+            double y = playerY + yOffset;
+            for (double angle = 0; angle < 360; angle += 5) {
+                double x = center.getX() + spawnRadius * Math.cos(Math.toRadians(angle));
+                double z = center.getZ() + spawnRadius * Math.sin(Math.toRadians(angle));
+
+                Location particleLocation = new Location(world, x, y, z);
+                player.spawnParticle(Particle.HAPPY_VILLAGER, particleLocation, 1, 0, 0, 0, 0);
+            }
+        }
+        center.setY(playerY);
+        player.spawnParticle(Particle.END_ROD, center, 1, 0, 0, 0, 0);
+    }
+
+
+    private void showRectangularAreaParticles(Player player) {
+        double playerY = player.getLocation().getY();
+
+        for (double x = minX; x <= maxX; x += 2) {
+            player.spawnParticle(Particle.HAPPY_VILLAGER, new Location(world, x, playerY, minZ), 1, 0, 0, 0, 0);
+            player.spawnParticle(Particle.HAPPY_VILLAGER, new Location(world, x, playerY, maxZ), 1, 0, 0, 0, 0);
+        }
+
+        for (double z = minZ; z <= maxZ; z += 2) {
+            player.spawnParticle(Particle.HAPPY_VILLAGER, new Location(world, minX, playerY, z), 1, 0, 0, 0, 0);
+            player.spawnParticle(Particle.HAPPY_VILLAGER, new Location(world, maxX, playerY, z), 1, 0, 0, 0, 0);
+        }
+
+        Location center = new Location(world, (minX + maxX) / 2, playerY, (minZ + maxZ) / 2);
+        player.spawnParticle(Particle.END_ROD, center, 1, 0, 0, 0, 0);
+    }
+
     private boolean hasAirBelow(Player player, int blocks) {
         Location loc = player.getLocation();
         for (int i = 1; i <= blocks; i++) {
@@ -239,7 +334,7 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
             playerDataManager.incrementFlyCount(player);
         }
 
-        if (plugin.getConfig().getBoolean("messages.show_press_to_boost", true)) {
+        if (plugin.getConfig().getBoolean("messages.show_press_to_boost", true) && boostEnabled) {
             MessageUtils.sendActionBar(player, "press_to_boost");
         }
 
@@ -254,8 +349,6 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
 
     @EventHandler
     public void onDoubleJump(PlayerToggleFlightEvent event) {
-        if (!this.boostEnabled) return;
-
         Player player = event.getPlayer();
 
         if (!player.hasPermission("spawnelytra.use")) {
@@ -276,6 +369,51 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
             if ("double_jump".equalsIgnoreCase(this.activationMode)) {
                 activateElytraFlight(player);
             }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerSneak(PlayerToggleSneakEvent event) {
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+
+        if (!player.hasPermission("spawnelytra.use")) {
+            return;
+        }
+
+        if (disableInCreative && player.getGameMode() == GameMode.CREATIVE) {
+            return;
+        }
+
+        if (!"sneak_jump".equalsIgnoreCase(this.activationMode)) {
+            return;
+        }
+
+        if (!isElytraAllowedInMode(player) || !this.isInSpawnArea(player)) {
+            return;
+        }
+
+        if (event.isSneaking()) {
+            sneakPressed.put(playerId, true);
+
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                UUID playerUUID = player.getUniqueId();
+                if (sneakPressed.getOrDefault(playerUUID, false) &&
+                        !player.isOnGround() &&
+                        !this.flying.contains(player)) {
+
+                    long currentTime = System.currentTimeMillis();
+                    Long lastActivation = sneakJumpCooldown.get(playerUUID);
+
+                    if (lastActivation == null || currentTime - lastActivation > 1000) {
+                        activateElytraFlight(player);
+                        sneakJumpCooldown.put(playerUUID, currentTime);
+                    }
+                }
+                sneakPressed.put(playerUUID, false);
+            }, 10L);
+        } else {
+            sneakPressed.put(playerId, false);
         }
     }
 
@@ -307,18 +445,54 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
     public void onSwapItem(PlayerSwapHandItemsEvent event) {
         Player player = event.getPlayer();
 
+        if ("f_key".equalsIgnoreCase(this.activationMode)) {
+            if (!player.hasPermission("spawnelytra.use")) {
+                return;
+            }
+
+            if (disableInCreative && player.getGameMode() == GameMode.CREATIVE) {
+                return;
+            }
+
+            if (isElytraAllowedInMode(player) && this.isInSpawnArea(player)) {
+                if (!this.flying.contains(player)) {
+                    event.setCancelled(true);
+
+                    Vector launchVelocity = new Vector(0, this.fKeyLaunchStrength, 0);
+                    player.setVelocity(launchVelocity);
+
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        activateElytraFlight(player);
+                    }, 5L);
+
+                    return;
+                }
+            }
+        }
+
         if (!player.hasPermission("spawnelytra.useboost")) {
             return;
         }
 
-        if (this.boostEnabled &&
-                this.flying.contains(player) &&
+        if (!boostEnabled) {
+            return;
+        }
+
+        if (this.flying.contains(player) &&
                 !this.boosted.contains(player) &&
                 player.isGliding()) {
 
             event.setCancelled(true);
             this.boosted.add(player);
-            player.setVelocity(player.getLocation().getDirection().multiply(this.multiplyValue));
+
+            Vector velocity;
+            if ("upward".equalsIgnoreCase(this.boostDirection)) {
+                velocity = new Vector(0, this.multiplyValue, 0);
+            } else {
+                velocity = player.getLocation().getDirection().multiply(this.multiplyValue);
+            }
+
+            player.setVelocity(velocity);
 
             if (playerDataManager != null) {
                 playerDataManager.incrementBoostCount(player);
@@ -376,9 +550,13 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
 
         if (this.useRectangularArea) {
             Location loc = player.getLocation();
-            return loc.getX() >= this.minX && loc.getX() <= this.maxX &&
-                    loc.getY() >= this.minY && loc.getY() <= this.maxY &&
-                    loc.getZ() >= this.minZ && loc.getZ() <= this.maxZ;
+            double x = loc.getX();
+            double y = loc.getY();
+            double z = loc.getZ();
+
+            return x >= this.minX && x <= this.maxX &&
+                    y >= this.minY && y <= this.maxY &&
+                    z >= this.minZ && z <= this.maxZ;
         } else {
             return this.spawnLocation.distance(player.getLocation()) <= (double)this.spawnRadius;
         }
@@ -389,5 +567,13 @@ public class SpawnElytra extends BukkitRunnable implements Listener {
         if (mode == GameMode.SURVIVAL) return true;
         if (mode == GameMode.ADVENTURE && !disableInAdventure) return true;
         return false;
+    }
+
+    public void stopVisualization(Player player) {
+        BukkitTask task = visualizationTasks.remove(player.getUniqueId());
+        if (task != null) {
+            task.cancel();
+            player.sendMessage(ChatColor.YELLOW + "Area visualization stopped.");
+        }
     }
 }

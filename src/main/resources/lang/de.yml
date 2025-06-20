@@ -1,6 +1,6 @@
 # German language file
-press_to_boost: "&6Drücke &e&l{key} &6um dich zu boosten"
-boost_activated: "&a&lBoost aktiviert!"
+press_to_boost: "&aDrücke &a&l{key} &aum dich zu boosten"
+boost_activated: "&aBoost aktiviert!"
 new_version_available: "&bEine neue Version von Spawn Elytra ist verfügbar!"
 update_to_version: "&eBitte aktualisiere auf Version &a{latestVersion} &7(aktuell: &c{currentVersion}&7)"
 download_link: "&bDownload-Link:"
