@@ -28,12 +28,10 @@ public class PlayerDataManager {
     }
 
     public void initialize() {
-        // Create the playerdata directory if it doesn't exist
         if (!dataFolder.exists()) {
             dataFolder.mkdirs();
         }
 
-        // Load all player data files
         File[] dataFiles = dataFolder.listFiles((dir, name) -> name.endsWith(".yml"));
         if (dataFiles != null) {
             for (File file : dataFiles) {
@@ -48,7 +46,7 @@ public class PlayerDataManager {
         String filename = file.getName();
         if (filename.endsWith(".yml")) {
             try {
-                String uuidString = filename.substring(0, filename.length() - 4); // Remove .yml
+                String uuidString = filename.substring(0, filename.length() - 4);
                 UUID uuid = UUID.fromString(uuidString);
 
                 FileConfiguration config = YamlConfiguration.loadConfiguration(file);

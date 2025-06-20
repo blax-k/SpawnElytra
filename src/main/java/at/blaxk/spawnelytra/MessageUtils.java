@@ -11,12 +11,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 public class MessageUtils {
     private static Map<String, String> messages = new HashMap<>();
     private static Map<String, Boolean> messageToggles = new HashMap<>();
-    private static Pattern legacyColorPattern = Pattern.compile("&[0-9a-fk-orA-FK-OR]");
     private static Plugin plugin;
 
     public static void initialize(Plugin plugin) {
@@ -78,16 +76,10 @@ public class MessageUtils {
             if (config.isSet("messages.boost_activated")) {
                 messages.put("boost_activated", config.getString("messages.boost_activated"));
             }
-        } else {
-            plugin.getLogger().info("Using language file messages (custom messages disabled)");
         }
 
         boolean showPressToBoost = config.getBoolean("messages.show_press_to_boost", true);
         boolean showBoostActivated = config.getBoolean("messages.show_boost_activated", true);
-
-        plugin.getLogger().info("Press to boost message enabled: " + showPressToBoost);
-        plugin.getLogger().info("Boost activated message enabled: " + showBoostActivated);
-        plugin.getLogger().info("Using custom messages: " + useCustomMessages);
 
         messageToggles.put("press_to_boost", showPressToBoost);
         messageToggles.put("boost_activated", showBoostActivated);

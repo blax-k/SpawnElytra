@@ -4,6 +4,9 @@ import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -14,19 +17,21 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public final class Main extends JavaPlugin {
+public final class Main extends JavaPlugin implements Listener {
     public static Main plugin;
     public static int radius;
     public static int strength;
     public static String world;
-    public static boolean ignoreyLevel;
     public static int spawnx;
     public static int spawny;
     public static int spawnz;
     public static boolean disableInCreative;
-    private static final String CURRENT_VERSION = "1.2.1";
+    private static final String CURRENT_VERSION = "1.3";
     private static final String MODRINTH_PROJECT_ID = "Egw2R8Fj";
     private PlayerDataManager playerDataManager;
+    private SpawnElytra spawnElytraInstance;
+    private String latestVersion = null;
+    private boolean updateAvailable = false;
 
     @Override
     public void onEnable() {
@@ -39,9 +44,13 @@ public final class Main extends JavaPlugin {
         saveLanguageFiles();
         MessageUtils.loadMessages(this);
         loadConfig();
+
         int pluginId = 25081;
         Metrics metrics = new Metrics(this, pluginId);
-        Bukkit.getPluginManager().registerEvents(new SpawnElytra(this), this);
+
+        spawnElytraInstance = new SpawnElytra(this);
+        Bukkit.getPluginManager().registerEvents(spawnElytraInstance, this);
+        Bukkit.getPluginManager().registerEvents(this, this);
 
         CommandHandler commandHandler = new CommandHandler(this);
         getCommand("spawnelytra").setExecutor(commandHandler);
@@ -54,7 +63,7 @@ public final class Main extends JavaPlugin {
             }
         }
 
-        new VersionChecker().runTaskTimerAsynchronously(this, 20L * 30, 20L * 60 * 60); // Check after 30 seconds and every hour
+        new VersionChecker().runTaskTimerAsynchronously(this, 20L * 120, 20L * 60 * 60 * 8);
 
         getLogger().info("Spawn Elytra Plugin v" + CURRENT_VERSION + " enabled");
         getLogger().info("Plugin by Blaxk_");
@@ -66,7 +75,33 @@ public final class Main extends JavaPlugin {
             playerDataManager.saveAllPlayerData();
         }
 
+        if (spawnElytraInstance != null) {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                spawnElytraInstance.stopVisualization(player);
+            }
+        }
+
         getLogger().info("Spawn Elytra Plugin disabled");
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        if (player.isOp() && updateAvailable && latestVersion != null) {
+            Bukkit.getScheduler().runTaskLater(this, () -> {
+                String updateLink = "https://modrinth.com/plugin/spawn-elytra/version/" + latestVersion;
+                player.sendMessage(ChatColor.YELLOW + MessageUtils.getMessage("new_version_available"));
+                player.sendMessage(ChatColor.YELLOW + MessageUtils.getMessage("update_to_version")
+                        .replace("{latestVersion}", latestVersion)
+                        .replace("{currentVersion}", CURRENT_VERSION));
+                player.sendMessage(ChatColor.GREEN + MessageUtils.getMessage("download_link"));
+                player.sendMessage(ChatColor.GREEN + updateLink);
+            }, 20L);
+        }
+    }
+
+    public SpawnElytra getSpawnElytraInstance() {
+        return spawnElytraInstance;
     }
 
     private void loadConfig() {
@@ -77,12 +112,10 @@ public final class Main extends JavaPlugin {
 
         if (getConfig().getString("mode", "auto").equalsIgnoreCase("advanced")) {
             if (getConfig().contains("spawn.x")) {
-                // New format
                 spawnx = getConfig().getInt("spawn.x");
                 spawny = getConfig().getInt("spawn.y");
                 spawnz = getConfig().getInt("spawn.z");
             } else {
-                // Old format for backward compatibility
                 spawnx = getConfig().getInt("spawnx");
                 spawny = getConfig().getInt("spawny");
                 spawnz = getConfig().getInt("spawnz");
@@ -192,6 +225,17 @@ public final class Main extends JavaPlugin {
         reloadConfig();
         loadConfig();
         MessageUtils.loadMessages(this);
+
+        if (spawnElytraInstance != null) {
+            spawnElytraInstance.cancel();
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                spawnElytraInstance.stopVisualization(player);
+            }
+        }
+
+        spawnElytraInstance = new SpawnElytra(this);
+        Bukkit.getPluginManager().registerEvents(spawnElytraInstance, this);
+
         getLogger().info("Spawn Elytra configuration reloaded");
     }
 
@@ -199,8 +243,11 @@ public final class Main extends JavaPlugin {
         @Override
         public void run() {
             try {
-                String latestVersion = getLatestVersion();
-                if (!CURRENT_VERSION.equals(latestVersion)) {
+                String fetchedLatestVersion = getLatestVersion();
+                if (!CURRENT_VERSION.equals(fetchedLatestVersion)) {
+                    latestVersion = fetchedLatestVersion;
+                    updateAvailable = true;
+
                     String updateLink = "https://modrinth.com/plugin/spawn-elytra/version/" + latestVersion;
                     Bukkit.getOnlinePlayers().stream()
                             .filter(Player::isOp)
@@ -217,6 +264,9 @@ public final class Main extends JavaPlugin {
                             .replace("{latestVersion}", latestVersion)
                             .replace("{currentVersion}", CURRENT_VERSION))));
                     getLogger().warning(ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', MessageUtils.getMessage("download_link"))) + " " + updateLink);
+                } else {
+                    updateAvailable = false;
+                    latestVersion = null;
                 }
             } catch (Exception e) {
                 getLogger().warning(MessageUtils.getMessage("failed_update_check").replace("{errorMessage}", e.getMessage()));
