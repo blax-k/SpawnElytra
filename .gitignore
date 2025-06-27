@@ -247,3 +247,7 @@ debug.bat
 *.sublime-workspace
 *.sublime-project
 target/maven-status/maven-compiler-plugin/compile/default-compile/
+
+‎dependency-reduced-pom.xml
+craftattackspawnelytra.iml
+spawnelytra.iml
