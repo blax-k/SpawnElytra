@@ -7,20 +7,13 @@
 ![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/blax-k/spawnelytra?label=CodeFactor&style=for-the-badge&color=2C8904)
 ![https://img.shields.io/github/license/blaxkkkk/SpawnElytra](https://img.shields.io/github/license/blax-k/SpawnElytra?&color=2C8904&label=License&style=for-the-badge)
 [![Docs](https://img.shields.io/badge/Docs-GitBook-blue?style=for-the-badge&logo=gitbook&color=2C8904)](https://blaxk.gitbook.io/spawnelytra)
-</div>
-
-_Players can use an Elytra-like feature while in spawn and when leaving spawn. You can boost yourself once by pressing the offhand button._<br><br>
-<a href="https://modrinth.com/plugin/spawn-elytra?loader=spigot&version=1.21.10#download">
-  <img alt="spigot" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact-minimal/supported/spigot_vector.svg">
-</a>
-<a href="https://modrinth.com/plugin/spawn-elytra?loader=purpur&version=1.21.10#download">
-  <img alt="purpur" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact-minimal/supported/purpur_vector.svg">
-</a>
-<a href="https://modrinth.com/plugin/spawn-elytra?loader=paper&version=1.21.10#download">
-  <img alt="paper" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact-minimal/supported/paper_vector.svg">
-</a>
+<br>
+<img alt="spigot" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact-minimal/supported/spigot_vector.svg"> <img alt="purpur" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact-minimal/supported/purpur_vector.svg"> <img alt="paper" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact-minimal/supported/paper_vector.svg">
 <img alt="does not support velocity" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact-minimal/unsupported/velocity_vector.svg">
 <img alt="does not support fabric" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact-minimal/unsupported/fabric_vector.svg">
+</div>
+
+_Players can use an Elytra-like feature while in spawn and when leaving spawn. You can boost yourself once by pressing the offhand button._
 
 ## Features
 
