@@ -1,4 +1,5 @@
 # French language file
+<<<<<<< HEAD
 press_to_boost: "<#91f251>Appuyez sur <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>pour vous propulser"
 boost_activated: "<#74ea31>Propulsion activée !"
 failed_update_check: "<#fd5e5e>Échec de la vérification des mises à jour : <error_message>"
@@ -78,3 +79,12 @@ activation_mode_hover_f_key: "<#91f251>Activer l'élytre avec la touche F (écha
 
 # S'il vous plaît ne changez pas
 lang-version: 1.4
+=======
+press_to_boost: "&6Appuyez sur &e&l{key} &6pour vous propulser."
+boost_activated: "&a&lPropulsion activée !"
+new_version_available: "&bUne nouvelle version de Spawn Elytra est disponible !"
+update_to_version: "&eVeuillez mettre à jour vers la version &a{latestVersion} &7(actuelle : &c{currentVersion}&7)"
+download_link: "&bLien de téléchargement :"
+failed_update_check: "&cÉchec de la vérification des mises à jour : {errorMessage}"
+creative_mode_elytra_disabled: "&eVol en élytre désactivé en mode Créatif."
+>>>>>>> restore-v1.3
