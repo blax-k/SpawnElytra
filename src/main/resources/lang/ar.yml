@@ -1,8 +1,0 @@
-# Arabic language file
-press_to_boost: "&6اضغط &e&l{key} &6للانطلاق."
-boost_activated: "&a&lتم تنشيط الدفع!"
-new_version_available: "&bيتوفر إصدار جديد من إضافة سبون إليترا!"
-update_to_version: "&eيرجى التحديث إلى الإصدار &a{latestVersion} &7(الإصدار الحالي: &c{currentVersion}&7)"
-download_link: "&bرابط التحميل:"
-failed_update_check: "&cفشل التحقق من التحديثات: {errorMessage}"
-creative_mode_elytra_disabled: "&eتم تعطيل طيران الإليترا في وضع الإبداع."
