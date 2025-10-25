@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://blaxk.gitbook.io/spawnelytra
+    about: Check the official documentation for help and guides
+  - name: Modrinth Page
+    url: https://modrinth.com/plugin/spawn-elytra
+    about: Download the latest version from Modrinth
