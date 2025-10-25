@@ -1,5 +1,4 @@
 # Spanish language file
-<<<<<<< HEAD
 press_to_boost: "<#91f251>Presiona <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>para impulsarte"
 boost_activated: "<#74ea31>¡Impulso activado!"
 failed_update_check: "<#fd5e5e>Error al comprobar actualizaciones: <error_message>"
@@ -79,12 +78,3 @@ activation_mode_hover_f_key: "<#91f251>Activar elytra con tecla F (intercambiar 
 
 # Por favor no cambies
 lang-version: 1.4
-=======
-press_to_boost: "&6Presiona &e&l{key} &6para impulsarte."
-boost_activated: "&a&l¡Impulso activado!"
-new_version_available: "&b¡Una nueva versión de Spawn Elytra está disponible!"
-update_to_version: "&ePor favor, actualiza a la versión &a{latestVersion} &7(actual: &c{currentVersion}&7)"
-download_link: "&bEnlace de descarga:"
-failed_update_check: "&cError al comprobar actualizaciones: {errorMessage}"
-creative_mode_elytra_disabled: "&eVuelo con elytra desactivado en modo Creativo."
->>>>>>> restore-v1.3
