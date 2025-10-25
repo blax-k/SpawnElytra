@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿press_to_boost: "<#91f251>Drücke <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>um dich zu boosten"
 boost_activated: "<#74ea31>Boost aktiviert!"
 failed_update_check: "<#fd5e5e>Fehler beim Überprüfen auf Updates: <error_message>"
@@ -76,3 +77,13 @@ activation_mode_hover_f_key: "<#91f251>Elytra mit F-Taste aktivieren (<key:key.s
 
 # Bitte nicht ändern
 lang-version: 1.4
+=======
+# German language file
+press_to_boost: "&aDrücke &a&l{key} &aum dich zu boosten"
+boost_activated: "&aBoost aktiviert!"
+new_version_available: "&bEine neue Version von Spawn Elytra ist verfügbar!"
+update_to_version: "&eBitte aktualisiere auf Version &a{latestVersion} &7(aktuell: &c{currentVersion}&7)"
+download_link: "&bDownload-Link:"
+failed_update_check: "&cFehler beim Überprüfen auf Updates: {errorMessage}"
+creative_mode_elytra_disabled: "&eElytra-Flug im Kreativmodus deaktiviert."
+>>>>>>> restore-v1.3
