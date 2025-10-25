@@ -1,0 +1,255 @@
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.tmp
+*.temp
+~$*
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+
+# Server JAR files
+server.jar
+paper*.jar
+spigot*.jar
+bukkit*.jar
+purpur*.jar
+
+# Server directories
+plugins/
+world/
+world_nether/
+world_the_end/
+logs/
+crash-reports/
+cache/
+
+# Server configuration files (keep templates)
+server.properties
+bukkit.yml
+spigot.yml
+paper.yml
+paper-global.yml
+paper-world-defaults.yml
+pufferfish.yml
+purpur.yml
+eula.txt
+banned-*.json
+ops.json
+whitelist.json
+usercache.json
+usernamecache.json
+
+# Test server data
+test-server/
+run/
+debug/
+
+# Plugin data files
+playerdata.yml
+config.yml.backup
+messages.yml.backup
+*.db
+*.sqlite
+*.h2.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Distribution files
+dist/
+build/
+release/
+
+# Compiled plugin files
+*.jar
+!lib/*.jar
+
+# Version files
+version.txt
+build.number
+
+# Log files
+*.log
+*.log.*
+logs/
+debug.log
+error.log
+
+# Crash dumps
+hs_err_*.log
+core.*
+
+
+# Temporary directories
+tmp/
+temp/
+.tmp/
+
+# Swap files
+*.swp
+*.swo
+*~
+
+# Lock files
+*.lock
+.lock
+
+# API keys and secrets
+.env
+.env.local
+.env.*.local
+secrets.yml
+api-keys.txt
+
+# Database credentials
+database.yml
+db.properties
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+
+# Generated documentation
+docs/build/
+docs/_build/
+docs/site/
+
+
+# Node.js (if using for documentation)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Custom test configurations
+test-config/
+local-config/
+
+# Development notes
+TODO.md
+NOTES.md
+dev-notes.txt
+
+# Screenshots and assets (keep in separate folder)
+screenshots/
+assets/dev/
+
+# Local development scripts
+run-server.sh
+run-server.bat
+debug.sh
+debug.bat
+
+
+*.sublime-workspace
+*.sublime-project
+/workspace.xml
+/shelf/
+.mvn/timing.properties
+.shelf/
+.workspace.xml
+.mvn/timing.properties
+*.sublime-workspace
+*.sublime-project
+target/maven-status/maven-compiler-plugin/compile/default-compile/
+
+‎dependency-reduced-pom.xml
+spawnelytra.iml
+
+# Example code files (documentation only)
+examples/

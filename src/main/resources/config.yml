@@ -1,0 +1,133 @@
+# Spawn Elytra Plugin by blaxk
+# Plugin Version: 1.4
+# Modrinth: https://modrinth.com/plugin/spawn-elytra
+
+# ==========================================
+# GLOBAL SETTINGS
+# ==========================================
+
+# Available languages: en, de, es, fr, ar
+language: en
+
+# Game mode restrictions
+game_modes:
+  # Automatically disable elytra when player enters creative mode (This prevents buggy flying in Creative)
+  disable_in_creative: true
+  # If you don't want to disable elytra in adventure mode, set this to false
+  disable_in_adventure: false
+
+# Fireworks settings
+fireworks:
+  # Disable fireworks when using spawn elytra (players can still use fireworks if they have a real elytra equipped)
+  disable_in_spawn_elytra: false
+
+# Message settings
+messages:
+  # Set to false to disable the "press to boost" message
+  show_press_to_boost: true
+  # Set to false to disable the "boost activated" message
+  show_boost_activated: true
+  # Set to true to show an actionbar when Elytra is disabled in Creative mode
+  show_creative_disabled: false
+  # Message style: classic or small_caps
+  style: classic
+
+# Visualization settings for /spawnelytra visualize command
+visualization:
+  # Vertical range above and below player for particle display
+  vertical_range: 20
+  # Additional vertical range for corner/cardinal pillars
+  pillar_vertical_range: 25
+  # Particle update frequency (ticks between updates, lower = more frequent)
+  update_frequency: 10
+  # Particle size multiplier for better visibility from distance
+  particle_size: 2.0
+  # Enable enhanced particles (brighter colors, additional effects)
+  enhanced_particles: true
+
+# Hunger consumption settings (global defaults, can be overridden per-world)
+hunger_consumption:
+  # Enable hunger consumption while using the spawn elytra features
+  enabled: false
+  # How hunger should be consumed: activation, distance, or time
+  mode: activation
+  # Minimum food level to keep (players will never drop below this value)
+  minimum_food_level: 0
+
+  activation:
+    # Hunger consumed each time the elytra activates
+    hunger_cost: 1
+
+  distance:
+    # Blocks travelled while gliding before hunger is consumed
+    blocks_per_point: 50.0
+    # Hunger consumed every time the distance threshold is reached
+    hunger_cost: 1
+
+  time:
+    # Seconds of gliding before hunger is consumed
+    seconds_per_point: 30
+    # Hunger consumed each time the timer elapses
+    hunger_cost: 1
+
+# ==========================================
+# WORLD-SPECIFIC SETTINGS
+# ==========================================
+
+# Configure elytra settings per world
+worlds:
+  # If you want to add another world, copy the entire 'world' section and change the name and preferences
+  world:
+    # Enable spawn elytra in this world
+    enabled: true
+
+    # Activation mode for elytra:
+    # double_jump: Player needs to double-press space to activate elytra
+    # auto: Automatically activates elytra when player has air below and is in spawn area
+    # sneak_jump: Player needs to sneak while jumping to activate elytra
+    # f_key: Player needs to press F (swap hands) to activate elytra, this also boosts a player upwards on activation
+    activation_mode: double_jump
+
+    # The radius around spawn where elytra boosting is enabled
+    # (only used when area_mode is 'circular' or spawn coords x2/y2/z2 are all 0)
+    radius: 100
+
+    # Spawn area configuration
+    spawn_area:
+      # Mode options: 'auto' or 'advanced'
+      # auto: Uses the world spawn point with radius
+      # advanced: Uses custom spawn coordinates defined below
+      mode: auto
+
+      # Area type: 'circular' or 'rectangular'
+      area_type: circular
+
+      # Primary spawn coordinates (center for circular, first corner for rectangular)
+      x: 0
+      y: 64
+      z: 0
+
+      # Secondary coordinates (only used for rectangular areas)
+      # Setting all to 0 uses circular area with radius instead
+      x2: 0
+      y2: 0
+      z2: 0
+
+    # Boost settings
+    boost:
+      # Enable boost functionality
+      enabled: true
+      # The strength of the boost when pressing the boost key
+      strength: 4
+      # Boost direction: 'forward' or 'upward'
+      # forward: Boosts player in the direction they are looking
+      # upward: Boosts player straight up
+      direction: forward
+      # Boost sound effect - can be any sound from https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html
+      # Examples: ENTITY_BAT_TAKEOFF, ENTITY_FIREWORK_ROCKET_BLAST, ITEM_ELYTRA_FLYING
+      sound: ENTITY_BAT_TAKEOFF
+
+    # F-key specific settings (only used when activation_mode: f_key)
+    f_key:
+      # Launch strength when pressing F key (1.5 = ~14-15 blocks upward)
+      launch_strength: 1.5

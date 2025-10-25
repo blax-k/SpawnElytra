@@ -1,0 +1,101 @@
+name: Feedback
+description: Share your feedback, suggestions, or general thoughts about SpawnElytra
+title: "[Feedback]: "
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to share your feedback! We value your thoughts and suggestions to improve SpawnElytra.
+
+  - type: dropdown
+    id: feedback-type
+    attributes:
+      label: Feedback Type
+      description: What type of feedback are you providing?
+      options:
+        - General Feedback
+        - User Experience
+        - Documentation
+        - Configuration
+        - Performance
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: feedback-description
+    attributes:
+      label: Your Feedback
+      description: Please share your thoughts, suggestions, or comments
+      placeholder: I wanted to share my thoughts on...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: experience-rating
+    attributes:
+      label: Overall Experience
+      description: How would you rate your overall experience with SpawnElytra?
+      options:
+        - Excellent
+        - Good
+        - Average
+        - Below Average
+        - Poor
+        - Prefer not to say
+    validations:
+      required: false
+
+  - type: textarea
+    id: what-works
+    attributes:
+      label: What's Working Well
+      description: What aspects of the plugin do you like or find useful?
+      placeholder: I really appreciate...
+
+  - type: textarea
+    id: what-could-improve
+    attributes:
+      label: What Could Be Better
+      description: What aspects could be improved?
+      placeholder: It would be better if...
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: How You're Using It
+      description: Tell us about your server and how you're using SpawnElytra
+      placeholder: I'm using this plugin on a...
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: SpawnElytra Version
+      description: What version are you using?
+      placeholder: e.g., 1.3
+
+  - type: input
+    id: server-type
+    attributes:
+      label: Server Type
+      description: What type of server are you running?
+      placeholder: e.g., Survival, Creative, SMP, Network
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Comments
+      description: Any other thoughts or context you'd like to share
+      placeholder: I'd also like to mention...
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have checked the documentation
+          required: false
+        - label: This feedback is constructive and respectful
+          required: true
