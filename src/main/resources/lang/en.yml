@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ﻿# English language file
 press_to_boost: "<#91f251>Press <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>to boost yourself"
 boost_activated: "<#74ea31>Boost activated!"
@@ -79,13 +78,3 @@ activation_mode_hover_f_key: "<#91f251>Activate elytra with F key (swap hands)"
 
 # Please do not change
 lang-version: 1.4
-=======
-# English language file
-press_to_boost: "&aPress &a&l{key} &ato boost yourself"
-boost_activated: "&aBoost activated!"
-new_version_available: "&bA new version of Spawn Elytra is available!"
-update_to_version: "&ePlease update to version &a{latestVersion} &7(current: &c{currentVersion}&7)"
-download_link: "&bDownload link:"
-failed_update_check: "&cFailed to check for updates: {errorMessage}"
-creative_mode_elytra_disabled: "&eElytra flight disabled in Creative mode."
->>>>>>> restore-v1.3
