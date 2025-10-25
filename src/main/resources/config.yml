@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Spawn Elytra Plugin by blaxk
 # Plugin Version: 1.4
 # Modrinth: https://modrinth.com/plugin/spawn-elytra
@@ -20,6 +21,75 @@ game_modes:
 fireworks:
   # Disable fireworks when using spawn elytra (players can still use fireworks if they have a real elytra equipped)
   disable_in_spawn_elytra: false
+=======
+# Spawn Elytra Plugin by Blaxk_
+# Plugin Version: 1.3
+# Modrinth: https://modrinth.com/plugin/spawn-elytra
+
+# Activation mode for elytra:
+# double_jump: Player needs to double-press space to activate elytra
+# auto: Automatically activates elytra when player has air below and is in spawn area
+# sneak_jump: Player needs to sneak while jumping to activate elytra
+# f_key: Player needs to press F (swap hands) to activate elytra, this also boosts a player upwards on activation.
+activation_mode: double_jump
+
+# The radius around spawn where elytra boosting is enabled
+# (only used in auto mode or if x2, y2, z2 are all set to 0)
+radius: 100
+
+# The strength of the boost when pressing the boost key
+strength: 2
+
+# Enable or disable the boost feature completely
+boost_enabled: true
+
+# Boost direction: 'forward' or 'upward'
+# forward: Boosts player in the direction they are looking
+# upward: Boosts player straight up
+boost_direction: forward
+
+# The world where the spawn elytra feature is enabled
+world: world
+
+# Disable fireworks when using spawn elytra (players can still use fireworks if they have a real elytra equipped)
+disable_fireworks_in_spawn_elytra: false
+
+# Custom spawn coordinates and dimensions
+spawn:
+  # Mode options: 'auto' or 'advanced'
+  # auto: Uses the world spawn point
+  # advanced: Uses custom spawn coordinates defined below
+  mode: advanced
+
+  # First point of the elytra area
+  x: 0
+  y: 64
+  z: 0
+
+  # Second point of the elytra area
+  # Setting all x2/y2/z2 to 0 will use the radius-based circular area instead
+  # Example: Using x=0, y=64, z=0 and x2=100, y2=128, z2=100 creates a rectangular area
+  # between those two coordinate points
+  x2: 0 # Second X coordinate
+  y2: 0 # Second Y coordinate
+  z2: 0 # Second Z coordinate
+
+# Boost sound effect - can be any sound from https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html
+# Examples: ENTITY_BAT_TAKEOFF, ENTITY_FIREWORK_ROCKET_BLAST, ITEM_ELYTRA_FLYING
+boost_sound: ENTITY_BAT_TAKEOFF
+
+# Available languages: en, de, es, fr, hi, zh, ar
+language: de
+
+# Automatically disable elytra when player enters creative mode (This prevents buggy flying in Creative)
+disable_in_creative: true
+
+# If you don't want to disable elytra in adventure mode, set this to false
+disable_in_adventure: false
+
+# Launch strength for F_key activation mode (Only used when activation_mode: f_key) (1.5 = ~14-15 blocks upward)
+f_key_launch_strength: 1.5
+>>>>>>> restore-v1.3
 
 # Message settings
 messages:
@@ -27,6 +97,7 @@ messages:
   show_press_to_boost: true
   # Set to false to disable the "boost activated" message
   show_boost_activated: true
+<<<<<<< HEAD
   # Set to true to show an actionbar when Elytra is disabled in Creative mode
   show_creative_disabled: false
   # Message style: classic or small_caps
@@ -131,3 +202,14 @@ worlds:
     f_key:
       # Launch strength when pressing F key (1.5 = ~14-15 blocks upward)
       launch_strength: 1.5
+=======
+  # Set to true to use custom messages below instead of language file messages
+  use_custom_messages: false
+
+  # Custom messages
+  # {key} is used represent the offhand key (F by default)
+  # Due to limitations from minecraft, you cant enter any key you want.
+  # Legacy color codes (&a, &e, etc.) are supported
+  press_to_boost: '&aPress &a&l{key} &ato boost yourself.'
+  boost_activated: '&aBoost activated!'
+>>>>>>> restore-v1.3
