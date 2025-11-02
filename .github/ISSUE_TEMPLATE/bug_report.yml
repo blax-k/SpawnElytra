@@ -71,8 +71,6 @@ body:
       label: Minecraft Version
       description: What Minecraft version?
       placeholder: e.g., 1.21
-    validations:
-      required: true
 
   - type: textarea
     id: config
