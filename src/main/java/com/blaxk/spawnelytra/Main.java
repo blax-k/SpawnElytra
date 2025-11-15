@@ -210,6 +210,7 @@ if (versionCheckTask != null) {
             case "de" -> "<#5db3ff>Eine neue Version von Spawn Elytra ist verfügbar!";
             case "es" -> "<#5db3ff>¡Una nueva versión de Spawn Elytra está disponible!";
             case "fr" -> "<#5db3ff>Une nouvelle version de Spawn Elytra est disponible !";
+            case "pl" -> "<#5db3ff>Dostępna jest aktualizacja pluginu SpawnElytra!";
             default -> "<#5db3ff>A new version of Spawn Elytra is available!";
         };
         return MiniMessage.miniMessage().deserialize(text);
@@ -220,6 +221,7 @@ if (versionCheckTask != null) {
             case "de" -> "<#fdba5e>Bitte aktualisiere auf Version <#91f251>" + latestVersion + "</#91f251> <#aaa8a8>(aktuell: <#fd5e5e>" + CURRENT_VERSION + "</#fd5e5e>)</#aaa8a8>";
             case "es" -> "<#fdba5e>Por favor, actualiza a la versión <#91f251>" + latestVersion + "</#91f251> <#aaa8a8>(actual: <#fd5e5e>" + CURRENT_VERSION + "</#fd5e5e>)</#aaa8a8>";
             case "fr" -> "<#fdba5e>Veuillez mettre à jour vers la version <#91f251>" + latestVersion + "</#91f251> <#aaa8a8>(actuelle : <#fd5e5e>" + CURRENT_VERSION + "</#fd5e5e>)</#aaa8a8>";
+            case "pl" -> "<#fdba5e>Zaaktualizuj do wersji <#91f251>" + latestVersion + "</#91f251> <#aaa8a8>(obecna: <#fd5e5e>" + CURRENT_VERSION + "</#fd5e5e>)</#aaa8a8>";
             default -> "<#fdba5e>Please update to version <#91f251>" + latestVersion + "</#91f251> <#aaa8a8>(current: <#fd5e5e>" + CURRENT_VERSION + "</#fd5e5e>)</#aaa8a8>";
         };
         return MiniMessage.miniMessage().deserialize(text);
@@ -240,6 +242,9 @@ if (versionCheckTask != null) {
             case "fr" -> "<#91f251>[<click:run_command:'/spawnelytra update'><hover:show_text:'<#91f251>Mettre à jour automatiquement vers la version " + version + "\n<#ffd166>⚠ Redémarrage du serveur requis\n<#FF7F50>    ⏩ Fonction expérimentale'>⏷ Mise à Jour Automatique</hover></click>] " +
                          "[<click:open_url:'" + githubUrl + "'><hover:show_text:'<#91f251>Ouvrir les publications GitHub'>⏷ GitHub</hover></click>] " +
                          "[<click:open_url:'" + modrinthUrl + "'><hover:show_text:'<#91f251>Ouvrir la page Modrinth'>⏷ Modrinth</hover></click>]";
+            case "pl" -> "<#91f251>[<click:run_command:'/spawnelytra update'><hover:show_text:'<#91f251>Automatycznie zaaktualizuj do wersji " + version + "\n<#ffd166>⚠ Wymagany jest restart serwera\n<#FF7F50>    ⏩ Funkcja eksperymentalna'>⏷ Zaaktualizuj automatycznie</hover></click>] " +
+                         "[<click:open_url:'" + githubUrl + "'><hover:show_text:'<#91f251>Otwórz zakładkę \'Releases\' na GitHubie'>⏷ GitHub</hover></click>] " +
+                         "[<click:open_url:'" + modrinthUrl + "'><hover:show_text:'<#91f251>Otwórz stronę pluginu na Modrinth'>⏷ Modrinth</hover></click>]";
             default -> "<#91f251>[<click:run_command:'/spawnelytra update'><hover:show_text:'<#91f251>Automatically update to version " + version + "\n<#ffd166>⚠ Server restart required\n<#FF7F50>    ⏩ Experimental feature'>⏷ Auto Update</hover></click>] " +
                        "[<click:open_url:'" + githubUrl + "'><hover:show_text:'<#91f251>Open GitHub releases'>⏷ GitHub</hover></click>] " +
                        "[<click:open_url:'" + modrinthUrl + "'><hover:show_text:'<#91f251>Open Modrinth release page'>⏷ Modrinth</hover></click>]";
@@ -303,6 +308,7 @@ if (versionCheckTask != null) {
             case "de" -> "Unbekannter Fehler";
             case "es" -> "Error desconocido";
             case "fr" -> "Erreur inconnue";
+            case "pl" -> "Nieznany błąd";
             default -> "Unknown error";
         };
         
@@ -311,30 +317,35 @@ if (versionCheckTask != null) {
                 case "de" -> "<#fd5e5e>Keine neue Version verfügbar zum Aktualisieren.";
                 case "es" -> "<#fd5e5e>No hay una nueva versión disponible para actualizar.";
                 case "fr" -> "<#fd5e5e>Aucune nouvelle version disponible pour la mise à jour.";
+                case "pl" -> "<#fd5e5e>Nie ma dostępnych aktualizacji.";
                 default -> "<#fd5e5e>No new version available to update.";
             };
             case "update_starting" -> switch (language) {
                 case "de" -> "<#91f251>Starte automatisches Update auf Version <#ffd166>" + version + "</#ffd166>...";
                 case "es" -> "<#91f251>Iniciando actualización automática a la versión <#ffd166>" + version + "</#ffd166>...";
                 case "fr" -> "<#91f251>Démarrage de la mise à jour automatique vers la version <#ffd166>" + version + "</#ffd166>...";
+                case "pl" -> "<#91f251>Rozpoczęto automatyczną aktualizację do wersji <#ffd166>" + version + "</#ffd166>...";
                 default -> "<#91f251>Starting automatic update to version <#ffd166>" + version + "</#ffd166>...";
             };
             case "update_success" -> switch (language) {
                 case "de" -> "<#91f251>✔ Update erfolgreich heruntergeladen und installiert!\n<#ffd166>⚠ Bitte starte den Server neu, um Version <#91f251>" + version + "</#91f251> zu laden.";
                 case "es" -> "<#91f251>✔ ¡Actualización descargada e instalada con éxito!\n<#ffd166>⚠ Por favor, reinicia el servidor para cargar la versión <#91f251>" + version + "</#91f251>.";
                 case "fr" -> "<#91f251>✔ Mise à jour téléchargée et installée avec succès !\n<#ffd166>⚠ Veuillez redémarrer le serveur pour charger la version <#91f251>" + version + "</#91f251>.";
+                case "pl" -> "<#91f251>✔ Aktualizacja została pobrana i zainstalowana!\n<#ffd166>⚠ Uruchom ponownie serwer aby załadować wersję <#91f251>" + version + "</#91f251>.";
                 default -> "<#91f251>✔ Update downloaded and installed successfully!\n<#ffd166>⚠ Please restart the server to load version <#91f251>" + version + "</#91f251>.";
             };
             case "update_failed" -> switch (language) {
                 case "de" -> "<#fd5e5e>✗ Automatisches Update fehlgeschlagen. Bitte aktualisiere manuell.";
                 case "es" -> "<#fd5e5e>✗ La actualización automática falló. Por favor, actualiza manualmente.";
                 case "fr" -> "<#fd5e5e>✗ La mise à jour automatique a échoué. Veuillez mettre à jour manuellement.";
+                case "pl" -> "<#fd5e5e>✗ Nie udało się przeprowadzić aktualizacji. Zainstaluj aktualizację ręcznie.";
                 default -> "<#fd5e5e>✗ Automatic update failed. Please update manually.";
             };
             case "update_error" -> switch (language) {
                 case "de" -> "<#fd5e5e>✗ Fehler beim Update: <#aaa8a8>" + (errorMsg.isEmpty() ? unknownError : errorMsg);
                 case "es" -> "<#fd5e5e>✗ Error durante la actualización: <#aaa8a8>" + (errorMsg.isEmpty() ? unknownError : errorMsg);
                 case "fr" -> "<#fd5e5e>✗ Erreur lors de la mise à jour : <#aaa8a8>" + (errorMsg.isEmpty() ? unknownError : errorMsg);
+                case "pl" -> "<#fd5e5e>✗ Błąd aktualizacji: <#aaa8a8>" + (errorMsg.isEmpty() ? unknownError : errorMsg);
                 default -> "<#fd5e5e>✗ Update error: <#aaa8a8>" + (errorMsg.isEmpty() ? unknownError : errorMsg);
             };
             default -> "<#aaa8a8>Unknown message: " + messageKey;
@@ -348,6 +359,7 @@ if (versionCheckTask != null) {
             case "de" -> "<#fdba5e>Plugin-Version: <#91f251>" + version + "</#91f251> | Autor: <#91f251>" + author + "</#91f251>";
             case "es" -> "<#fdba5e>Versión del plugin: <#91f251>" + version + "</#91f251> | Autor: <#91f251>" + author + "</#91f251>";
             case "fr" -> "<#fdba5e>Version du plugin : <#91f251>" + version + "</#91f251> | Auteur : <#91f251>" + author + "</#91f251>";
+            case "pl" -> "<#fdba5e>Wersja pluginu : <#91f251>" + version + "</#91f251> | Autor : <#91f251>" + author + "</#91f251>";
             default -> "<#fdba5e>Plugin Version: <#91f251>" + version + "</#91f251> | Author: <#91f251>" + author + "</#91f251>";
         };
         return MiniMessage.miniMessage().deserialize(text);
@@ -444,7 +456,8 @@ public void sendFirstInstallWelcome(final Player player) {
                 "   <#91f251>[<click:run_command:'/spawnelytra set language en'><hover:show_text:'<#91f251>Set language to English'>English</hover></click>] " +
                         "[<click:run_command:'/spawnelytra set language de'><hover:show_text:'<#91f251>Set language to German'>Deutsch</hover></click>] " +
                         "[<click:run_command:'/spawnelytra set language es'><hover:show_text:'<#91f251>Set language to Spanish'>Español</hover></click>] " +
-                        "[<click:run_command:'/spawnelytra set language fr'><hover:show_text:'<#91f251>Set language to French'>Français</hover></click>]"
+                        "[<click:run_command:'/spawnelytra set language fr'><hover:show_text:'<#91f251>Set language to French'>Français</hover></click>]" +
+                        "[<click:run_command:'/spawnelytra set language pl'><hover:show_text:'<#91f251>Set language to Polish'>Polski</hover></click>]"
         );
         MessageUtil.sendRaw(player, languageButtons);
         
@@ -517,6 +530,7 @@ public void sendFirstInstallWelcome(final Player player) {
             case "en" -> "English";
             case "es" -> "Español";
             case "fr" -> "Français";
+            case "pl" -> "Polski";
             default -> lang;
         };
     }
@@ -534,8 +548,8 @@ public void sendFirstInstallWelcome(final Player player) {
         MessageUtil.send(player, "settings_change_language");
         
         final StringBuilder langBuilder = new StringBuilder("<#91f251>");
-        final String[] languages = {"de", "en", "es", "fr"};
-        final String[] langNames = {"Deutsch", "English", "Español", "Français"};
+        final String[] languages = {"de", "en", "es", "fr", "pl"};
+        final String[] langNames = {"Deutsch", "English", "Español", "Français", "Polski"};
         
         for (int i = 0; i < languages.length; i++) {
             final String lang = languages[i];
@@ -785,6 +799,7 @@ public void sendFirstInstallWelcome(final Player player) {
                 case "de" -> "Klassisch";
                 case "es" -> "Clásico";
                 case "fr" -> "Classique";
+                case "pl" -> "Klasyczny";
                 default -> "Classic";
             };
             case "small_caps" -> "ꜱᴍᴀʟʟ ᴄᴀᴘꜱ";
@@ -944,7 +959,17 @@ public void sendFirstInstallWelcome(final Player player) {
                 "prevent-spawnelytra-from-migrating: true\r\n" +
                 "Hinweis: Dieser Schlüssel ist standardmäßig nicht in der config.yml vorhanden und muss manuell hinzugefügt werden.";
 
-        final String content = en + "\r\n\r\n" + de + "\r\n";
+        final String pl = "Informacje na temat migracji SpawnElytra\r\n\r\n" +
+                "Wszystkie poprzednie dane z pluginu CraftAttackSpawnElytra zostały zmigrowane.\r\n" +
+                "Ten plugin używa folderu: plugins/" + newFolderName + "\r\n\r\n" +
+                "Kopia zapasowa:\r\n" +
+                "Pełna kopia zapasowa starego folderu CraftAttackSpawnElytra została stworzona tutaj:\r\n" +
+                "plugins/" + newFolderName + "/backups/" + timestampFolderName + "/CraftAttackSpawnElytra/\r\n\r\n" +
+                "Jeśli masz plugin, który jest niekompatybilny i nie chcesz migrować danych SpawnElytra, dodaj poniższą opcję do plugins/" + newFolderName + "/config.yml:\r\n" +
+                "prevent-spawnelytra-from-migrating: true\r\n" +
+                "Uwaga: Ta opcja domyślnie nie jest obecna w pliku konfiguracyjnym i musi zostać dodana ręcznie.";
+
+        final String content = en + "\r\n\r\n" + de + "\r\n\r\n" + pl + "\r\n";
         java.nio.file.Files.writeString(new File(oldDir, MIGRATION_NOTICE_FILENAME).toPath(), content);
     }
 
@@ -956,7 +981,7 @@ public void sendFirstInstallWelcome(final Player player) {
                 return;
             }
 
-            final String[] languages = {"en", "de", "es", "fr"};
+            final String[] languages = {"en", "de", "es", "fr", "pl"};
             for (final String lang : languages) {
                 final File langFile = new File(langDir, lang + ".yml");
                 if (langFile.exists()) {
@@ -1024,6 +1049,7 @@ public void sendFirstInstallWelcome(final Player player) {
                         case "de" -> "Eine neue Version von Spawn Elytra ist verfügbar!";
                         case "es" -> "¡Una nueva versión de Spawn Elytra está disponible!";
                         case "fr" -> "Une nouvelle version de Spawn Elytra est disponible !";
+                        case "pl" -> "Nowa wersja SpawnElytra jest dostępna!";
                         default -> "A new version of Spawn Elytra is available!";
                     };
                     
@@ -1031,6 +1057,7 @@ public void sendFirstInstallWelcome(final Player player) {
                         case "de" -> "Bitte aktualisiere auf Version " + Main.this.latestVersion + " (aktuell: " + Main.CURRENT_VERSION + ")";
                         case "es" -> "Por favor, actualiza a la versión " + Main.this.latestVersion + " (actual: " + Main.CURRENT_VERSION + ")";
                         case "fr" -> "Veuillez mettre à jour vers la version " + Main.this.latestVersion + " (actuelle : " + Main.CURRENT_VERSION + ")";
+                        case "pl" -> "Zaaktualizuj do wersji " + Main.this.latestVersion + " (obecna: " + Main.CURRENT_VERSION + ")";
                         default -> "Please update to version " + Main.this.latestVersion + " (current: " + Main.CURRENT_VERSION + ")";
                     };
 

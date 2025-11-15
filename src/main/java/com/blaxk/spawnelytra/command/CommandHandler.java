@@ -54,6 +54,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
             case "en" -> "English";
             case "es" -> "Español";
             case "fr" -> "Français";
+            case "pl" -> "Polski";
             default -> lang;
         };
     }
@@ -366,6 +367,7 @@ case "dismiss":
             case "de" -> "<#fdba5e>Autor: <#91f251>" + author + "</#91f251>";
             case "es" -> "<#fdba5e>Autor: <#91f251>" + author + "</#91f251>";
             case "fr" -> "<#fdba5e>Auteur: <#91f251>" + author + "</#91f251>";
+            case "pl" -> "<#fdba5e>Autor: <#91f251>" + author + "</#91f251>";
             default -> "<#fdba5e>Author: <#91f251>" + author + "</#91f251>";
         };
         
@@ -440,7 +442,7 @@ case "dismiss":
             case 'u' -> "ᴜ";
             case 'v' -> "ᴠ";
             case 'w' -> "ᴡ";
-            case 'x' -> "ˣ";
+            case 'x' -> "x";
             case 'y' -> "ʏ";
             case 'z' -> "ᴢ";
             case 'ä' -> "ä";

@@ -18,7 +18,7 @@ import java.util.Locale;
 
 public enum ConfigUpdater {
     ;
-    private static final List<String> SUPPORTED_LANGUAGES = Arrays.asList("en", "de", "es", "fr", "ar");
+    private static final List<String> SUPPORTED_LANGUAGES = Arrays.asList("en", "de", "es", "fr", "ar", "pl");
     private static final String CONFIG_VERSION_1_4 = "1.4";
     
     public static void updateConfig(final JavaPlugin plugin) {
@@ -246,7 +246,7 @@ public enum ConfigUpdater {
             lines.add("");
             
             
-            lines.add("# Available languages: en, de, es, fr, ar");
+            lines.add("# Available languages: en, de, es, fr, ar, pl");
             lines.add("language: " + language);
             lines.add("");
             

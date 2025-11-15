@@ -6,7 +6,7 @@
 # GLOBAL SETTINGS
 # ==========================================
 
-# Available languages: en, de, es, fr, ar
+# Available languages: en, de, es, fr, ar, pl
 language: en
 
 # Game mode restrictions
