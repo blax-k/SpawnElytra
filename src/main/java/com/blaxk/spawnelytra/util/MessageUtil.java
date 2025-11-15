@@ -177,8 +177,12 @@ public enum MessageUtil {
             case "en_us":
             case "en-gb":
                 return "en";
+            case "polski":
+            case "polish":
+            case "pl_pl":
+                return "pl";
             default:
-                if (s.length() == 2 && ("en".equals(s) || "de".equals(s) || "es".equals(s) || "fr".equals(s) || "ar".equals(s))) {
+                if (s.length() == 2 && ("en".equals(s) || "de".equals(s) || "es".equals(s) || "fr".equals(s) || "ar".equals(s) || "pl".equals(s))) {
                     return s;
                 }
                 return "en";

@@ -16,7 +16,7 @@ import java.util.Set;
 
 public enum LanguageUpdater {
     ;
-    private static final List<String> SUPPORTED = Arrays.asList("en", "de", "es", "fr", "ar");
+    private static final List<String> SUPPORTED = Arrays.asList("en", "de", "es", "fr", "ar", "pl");
     private static final List<String> DEPRECATED = Arrays.asList("hi", "zh");
     private static final String REQUIRED_LANG_VERSION = "1.4";
 
