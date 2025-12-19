@@ -1,6 +1,6 @@
 name: Bug Report
 description: Report a bug in spawn elytra
-title: "Title"
+title: "Title..."
 labels: ["bug"]
 body:
   - type: textarea
