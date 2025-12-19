@@ -23,7 +23,7 @@ jobs:
       - name: Build with Maven
         run: mvn -B clean package -DskipTests
 
-      - name: Upload target JARs as artifact
+      - name: Upload jars as artifact
         uses: actions/upload-artifact@v4
         with:
           name: target-jars
