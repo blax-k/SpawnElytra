@@ -1,6 +1,10 @@
 name: Build
 
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -18,17 +22,25 @@ jobs:
         with:
           java-version: "21"
           distribution: "temurin"
-          cache: "maven"
+          cache: "gradle"
 
-      - name: Build with Maven
-        run: mvn -B clean package -DskipTests
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-      - name: Upload jars as artifact
+      - name: Build with Gradle
+        run: ./gradlew build --no-daemon --parallel --console=plain
+
+      - name: Check commit id
+        id: commit
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Upload build artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
-          name: target-jars
+          name: SpawnElytra-${{ steps.commit.outputs.short_sha }}
           path: |
-            **/target/*.jar
-            !**/target/*-original-*.jar
+            **/build/libs/*.jar
+            !**/build/libs/*-original.jar
           if-no-files-found: error
           retention-days: 14
