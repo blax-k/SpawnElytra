@@ -98,7 +98,8 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                     MessageUtil.send(sender, "command_player_only");
                     return true;
                 }
-                final SpawnElytra elytraInstance = this.plugin.getSpawnElytraInstance();
+                final Player player = (Player) sender;
+                final SpawnElytra elytraInstance = this.plugin.getSpawnElytraInstance(player.getWorld().getName());
                 if (elytraInstance == null) {
                     MessageUtil.send(sender, "spawnelytra_not_available");
                     return true;
@@ -113,10 +114,10 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                     } catch (final NumberFormatException ignored) {
                     }
                 }
-                elytraInstance.visualizeArea((Player) sender, seconds);
+                elytraInstance.visualizeArea(player, seconds);
                 return true;
 
-case "set":
+            case "set":
                 if (!sender.hasPermission("spawnelytra.admin")) {
                     MessageUtil.send(sender, "no_permission");
                     return true;
@@ -167,12 +168,12 @@ case "set":
                 this.plugin.sendOptionsMenu((Player) sender);
                 return true;
 
-case "dismiss":
+            case "dismiss":
                 if (!sender.hasPermission("spawnelytra.admin")) {
                     MessageUtil.send(sender, "no_permission");
                     return true;
                 }
-    this.plugin.markFirstInstallCompleted();
+                this.plugin.markFirstInstallCompleted();
                 final Component dismissed = MiniMessage.miniMessage().deserialize(
                         "<#91f251>The first install message will no longer be shown.");
                 if (sender instanceof final Player p) {

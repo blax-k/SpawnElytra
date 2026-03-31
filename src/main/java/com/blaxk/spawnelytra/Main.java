@@ -49,14 +49,14 @@ import org.jetbrains.annotations.NotNull;
 
 public final class Main extends JavaPlugin implements Listener {
     public static Main plugin;
-    private static final String CURRENT_VERSION = "1.4";
+    private static final String CURRENT_VERSION = "1.5";
     private static final String MODRINTH_PROJECT_ID = "Egw2R8Fj";
     private static final String MIGRATION_NOTICE_FILENAME = "MIGRATED_TO_SPAWN_ELYTRA.txt";
 
-private PlayerDataManager playerDataManager;
+    private PlayerDataManager playerDataManager;
     private final Map<String, SpawnElytra> worldInstances = new HashMap<>();
     private final Map<String, String> lastMenuSent = new HashMap<>();
-    private int remainingFirstInstallShows = 5; 
+    private int remainingFirstInstallShows = 5;
 
     private com.blaxk.spawnelytra.setup.SetupManager setupManager;
 
@@ -86,7 +86,7 @@ private PlayerDataManager playerDataManager;
         this.playerDataManager.initialize();
         
         MessageUtil.initialize(this);
-        ConfigUpdater.updateConfig(this);
+        final boolean migratedFromV13 = ConfigUpdater.updateConfig(this);
         
         if (migrated) {
             this.getConfig().set("first_install_completed", true);
@@ -94,7 +94,7 @@ private PlayerDataManager playerDataManager;
         }
         
         this.saveLanguageFiles();
-        LanguageUpdater.updateLanguages(this);
+        LanguageUpdater.updateLanguages(this, migratedFromV13);
         MessageUtil.loadMessages(this);
         this.loadWorldConfigurations();
     }
@@ -142,9 +142,9 @@ private PlayerDataManager playerDataManager;
             this.playerDataManager.saveAllPlayerData();
         }
 
-if (versionCheckTask != null) {
-    this.versionCheckTask.cancel();
-    this.versionCheckTask = null;
+        if (versionCheckTask != null) {
+            this.versionCheckTask.cancel();
+            this.versionCheckTask = null;
         }
 
         if (setupManager != null) {
@@ -169,7 +169,6 @@ if (versionCheckTask != null) {
         final Player player = event.getPlayer();
 
         if (player.isOp() && !this.getConfig().getBoolean("first_install_completed", false)) {
-
             this.sendFirstInstallWelcome(player);
         }
 
@@ -180,8 +179,13 @@ if (versionCheckTask != null) {
 
     @EventHandler
     public void onPlayerQuit(final PlayerQuitEvent event) {
-
-        this.lastMenuSent.remove(event.getPlayer().getUniqueId().toString());
+        final Player player = event.getPlayer();
+        this.lastMenuSent.remove(player.getUniqueId().toString());
+        for (final SpawnElytra instance : this.worldInstances.values()) {
+            if (instance != null) {
+                instance.cleanupPlayer(player);
+            }
+        }
     }
 
     private void sendUpdateNotification(final Player player) {
@@ -227,8 +231,7 @@ if (versionCheckTask != null) {
         };
         return MiniMessage.miniMessage().deserialize(text);
     }
-    
-    
+
     private Component getDownloadButtonsMessage(final String language, final String version) {
         final String modrinthUrl = this.buildUpdateLink();
         final String githubUrl = "https://github.com/blax-k/SpawnElytra/releases";
@@ -403,7 +406,6 @@ if (versionCheckTask != null) {
                 "<#91f251>Language set to <#ffd166>" + langCode + "</#ffd166>.");
         if (actor instanceof final Player p) {
             MessageUtil.sendRaw(p, confirmation);
-            
         } else {
             actor.sendMessage(MessageUtil.plain("info_header"));
         }
@@ -425,13 +427,12 @@ if (versionCheckTask != null) {
                 "<#91f251>Style set to <#ffd166>" + normalized + "</#ffd166>.");
         if (actor instanceof final Player p) {
             MessageUtil.sendRaw(p, confirmation);
-            
         } else {
             actor.sendMessage(MessageUtil.plain("info_header"));
         }
     }
 
-public void sendFirstInstallWelcome(final Player player) {
+    public void sendFirstInstallWelcome(final Player player) {
         if (player == null) return;
         
         if (this.getConfig().getBoolean("first_install_completed", false)) {
@@ -443,13 +444,13 @@ public void sendFirstInstallWelcome(final Player player) {
             return;
         }
 
-    this.remainingFirstInstallShows--;
+        this.remainingFirstInstallShows--;
 
         final Component header = MiniMessage.miniMessage().deserialize("<#ffcc33>Welcome to Spawn Elytra!");
         MessageUtil.sendRaw(player, header);
-    
-    this.lastMenuSent.put(player.getUniqueId().toString(), "first_install");
-    
+
+        this.lastMenuSent.put(player.getUniqueId().toString(), "first_install");
+
         final Component languagePrompt = MiniMessage.miniMessage().deserialize("<#fdba5e>✎ Choose your preferred language below:");
         MessageUtil.sendRaw(player, languagePrompt);
         
@@ -473,7 +474,6 @@ public void sendFirstInstallWelcome(final Player player) {
                 "<#aaa8a8>[<click:run_command:'/spawnelytra dismiss'><hover:show_text:'<#aaa8a8>Hide this message forever'>Dismiss this message</hover></click>]");
         MessageUtil.sendRaw(player, dismiss);
 
-        
         if (remainingFirstInstallShows == 0) {
             this.markFirstInstallCompleted();
         }
@@ -481,29 +481,20 @@ public void sendFirstInstallWelcome(final Player player) {
 
     public void sendSettingsMenu(final Player player) {
         if (player == null) return;
-        
-        
+
         MessageUtil.send(player, "settings_menu_header");
-        
-        
+
         final String currentLanguage = this.getConfig().getString("language", "en");
         final String currentStyle = this.getConfig().getString("messages.style", "classic");
         final String version = this.getDescription().getVersion();
         final String author = this.getDescription().getAuthors().isEmpty() ? "Unknown" : this.getDescription().getAuthors().getFirst();
-        
-        
+
         MessageUtil.send(player, "settings_current_language", Placeholder.unparsed("value", this.prettyLanguage(currentLanguage)));
         MessageUtil.send(player, "settings_current_style", Placeholder.unparsed("value", this.prettyStyle(currentStyle)));
-        
-        
+
         final String activeWorlds = this.worldInstances.isEmpty() ? "-" : String.join(", ", this.worldInstances.keySet());
         MessageUtil.send(player, "settings_active_worlds", Placeholder.unparsed("value", activeWorlds));
-        
-        
-        final Component pluginInfo = this.getSettingsPluginInfoMessage(this.getConfig().getString("language", "en").toLowerCase(Locale.ROOT), version, author);
-        MessageUtil.sendRaw(player, Component.text(" "));
-        
-        
+
         MessageUtil.sendRaw(player, Component.text(" "));
 
         this.lastMenuSent.put(player.getUniqueId().toString(), "settings");
@@ -513,10 +504,9 @@ public void sendFirstInstallWelcome(final Player player) {
 
     public void sendOptionsMenu(final Player player) {
         if (player == null) return;
-        
-        
+
         MessageUtil.send(player, "settings_menu_header");
-        
+
         MessageUtil.sendRaw(player, Component.text(" "));
 
         this.lastMenuSent.put(player.getUniqueId().toString(), "options");
@@ -612,7 +602,7 @@ public void sendFirstInstallWelcome(final Player player) {
     private void loadWorldConfigurations() {
         final ConfigurationSection worldsSection = this.getConfig().getConfigurationSection("worlds");
         if (worldsSection == null) {
-            this.getLogger().warning("No worlds configuration found! Creating default for 'world'...");
+            this.getLogger().warning("No worlds config found! Creating default for 'world'...");
             this.createDefaultWorldConfig();
             return;
         }
@@ -627,7 +617,7 @@ public void sendFirstInstallWelcome(final Player player) {
                         this.worldInstances.put(worldName, instance);
                         Bukkit.getPluginManager().registerEvents(instance, this);
                     } else {
-                        this.getLogger().warning("World '" + worldName + "' not found, skipping Spawn Elytra configuration");
+                        this.getLogger().warning("World '" + worldName + "' not found, skipping.");
                     }
                 }
             }
@@ -643,14 +633,14 @@ public void sendFirstInstallWelcome(final Player player) {
         
         final int radius = worldConfig.getInt("radius", 100);
         if (radius <= 0) {
-            this.getLogger().warning("Invalid radius (" + radius + ") for world '" + worldName + "'. Must be > 0. Using default: 100");
+            this.getLogger().warning("[" + worldName + "] Invalid radius (" + radius + "), using default: 100");
             worldConfig.set("radius", 100);
             valid = false;
         }
         
         final int boostStrength = worldConfig.getInt("boost.strength", 2);
         if (boostStrength <= 0) {
-            this.getLogger().warning("Invalid boost strength (" + boostStrength + ") for world '" + worldName + "'. Must be > 0. Using default: 2");
+            this.getLogger().warning("[" + worldName + "] Invalid boost strength (" + boostStrength + "), using default: 2");
             worldConfig.set("boost.strength", 2);
             valid = false;
         }
@@ -658,14 +648,14 @@ public void sendFirstInstallWelcome(final Player player) {
         final String activationMode = worldConfig.getString("activation_mode", "double_jump");
         final List<String> validModes = Arrays.asList("double_jump", "auto", "sneak_jump", "f_key");
         if (!validModes.contains(activationMode)) {
-            this.getLogger().warning("Invalid activation mode ('" + activationMode + "') for world '" + worldName + "'. Using default: double_jump");
+            this.getLogger().warning("[" + worldName + "] Invalid activation mode '" + activationMode + "', using default: double_jump");
             worldConfig.set("activation_mode", "double_jump");
             valid = false;
         }
         
         final String boostDirection = worldConfig.getString("boost.direction", "forward");
         if (!"forward".equals(boostDirection) && !"upward".equals(boostDirection)) {
-            this.getLogger().warning("Invalid boost direction ('" + boostDirection + "') for world '" + worldName + "'. Using default: forward");
+            this.getLogger().warning("[" + worldName + "] Invalid boost direction '" + boostDirection + "', using default: forward");
             worldConfig.set("boost.direction", "forward");
             valid = false;
         }
@@ -674,18 +664,32 @@ public void sendFirstInstallWelcome(final Player player) {
             final String soundName = worldConfig.getString("boost.sound", "ENTITY_BAT_TAKEOFF");
             Sound.valueOf(soundName.toUpperCase());
         } catch (final IllegalArgumentException e) {
-            this.getLogger().warning("Invalid boost sound for world '" + worldName + "'. Using default: ENTITY_BAT_TAKEOFF");
+            this.getLogger().warning("[" + worldName + "] Invalid boost sound, using default: ENTITY_BAT_TAKEOFF");
             worldConfig.set("boost.sound", "ENTITY_BAT_TAKEOFF");
             valid = false;
         }
         
         final double fKeyLaunchStrength = worldConfig.getDouble("f_key.launch_strength", 1.5);
         if (fKeyLaunchStrength <= 0) {
-            this.getLogger().warning("Invalid F-key launch strength (" + fKeyLaunchStrength + ") for world '" + worldName + "'. Must be > 0. Using default: 1.5");
+            this.getLogger().warning("[" + worldName + "] Invalid F-key launch strength (" + fKeyLaunchStrength + "), using default: 1.5");
             worldConfig.set("f_key.launch_strength", 1.5);
             valid = false;
         }
         
+        final int maxBoosts = worldConfig.getInt("boost.max_boosts", 1);
+        if (maxBoosts < 1) {
+            this.getLogger().warning("[" + worldName + "] Invalid max_boosts (" + maxBoosts + "), using default: 1");
+            worldConfig.set("boost.max_boosts", 1);
+            valid = false;
+        }
+        
+        final double boostCooldown = worldConfig.getDouble("boost.boost_cooldown", 0);
+        if (boostCooldown < 0) {
+            this.getLogger().warning("[" + worldName + "] Invalid boost_cooldown (" + boostCooldown + "), using default: 0");
+            worldConfig.set("boost.boost_cooldown", 0);
+            valid = false;
+        }
+
         if (!valid) {
             this.saveConfig();
         }
@@ -708,6 +712,8 @@ public void sendFirstInstallWelcome(final Player player) {
         this.getConfig().set("worlds." + "world" + ".boost.enabled", true);
         this.getConfig().set("worlds." + "world" + ".boost.strength", 2);
         this.getConfig().set("worlds." + "world" + ".boost.direction", "forward");
+        this.getConfig().set("worlds." + "world" + ".boost.max_boosts", 1);
+        this.getConfig().set("worlds." + "world" + ".boost.boost_cooldown", 0);
         this.getConfig().set("worlds." + "world" + ".boost.sound", "ENTITY_BAT_TAKEOFF");
         this.getConfig().set("worlds." + "world" + ".f_key.launch_strength", 1.5);
         this.saveConfig();
@@ -812,7 +818,7 @@ public void sendFirstInstallWelcome(final Player player) {
         try {
             final boolean preventMigration = this.getConfig().getBoolean("prevent-spawnelytra-from-migrating", false);
             if (preventMigration) {
-                this.getLogger().info("Migration prevented by config flag 'prevent-spawnelytra-from-migrating'.");
+                this.getLogger().info("Migration prevented by 'prevent-spawnelytra-from-migrating' flag.");
                 return false;
             }
 
@@ -832,8 +838,7 @@ public void sendFirstInstallWelcome(final Player player) {
 
             final File migrationNotice = new File(oldDir, MIGRATION_NOTICE_FILENAME);
             if (migrationNotice.exists()) {
-                this.getLogger().warning("Found " + MIGRATION_NOTICE_FILENAME + " in legacy folder, but directory contains other files.");
-                this.getLogger().warning("Skipping migration. If you need to re-migrate, delete the " + MIGRATION_NOTICE_FILENAME + " file.");
+                this.getLogger().warning("Legacy migration skipped: " + MIGRATION_NOTICE_FILENAME + " already exists. Delete it to re-migrate.");
                 return false;
             }
 
@@ -847,7 +852,7 @@ public void sendFirstInstallWelcome(final Player player) {
 
             final File backupTimestampDir = com.blaxk.spawnelytra.util.BackupUtil.backupDirectory(this, oldDir, "CraftAttackSpawnElytra");
             if (backupTimestampDir == null) {
-                this.getLogger().warning("Could not create backup of legacy folder. Aborting migration to avoid data loss.");
+                this.getLogger().warning("Could not backup legacy folder. Aborting migration.");
                 return false;
             }
 
@@ -869,13 +874,13 @@ public void sendFirstInstallWelcome(final Player player) {
             }
 
             if (new File(oldDir, "lang").exists()) {
-                this.getLogger().info("Skipping legacy language files migration: fresh lang files will be generated.");
+                this.getLogger().info("Skipping legacy lang files; fresh ones will be generated.");
                 migrated = true;
             }
 
             final boolean cleaned = this.deleteDirectoryContents(oldDir);
             if (!cleaned) {
-                this.getLogger().warning("Failed to clean legacy folder 'CraftAttackSpawnElytra' after backup. Some files may remain.");
+                this.getLogger().warning("Failed to clean legacy folder after backup.");
             }
             try {
                 this.writeMigrationNotice(oldDir, newDir, backupTimestampDir);
@@ -883,7 +888,7 @@ public void sendFirstInstallWelcome(final Player player) {
                 this.getLogger().warning("Failed to write migration notice file: " + e.getMessage());
             }
 
-            this.getLogger().info("Detected legacy folder 'CraftAttackSpawnElytra'. Backed up all files and migrated essentials to '" + newDir.getName() + "'.");
+            this.getLogger().info("Migrated legacy 'CraftAttackSpawnElytra' data to '" + newDir.getName() + "'.");
             return true;
         } catch (final Exception e) {
             this.getLogger().warning("Migration from legacy data folder failed: " + e.getMessage());
@@ -1063,10 +1068,8 @@ public void sendFirstInstallWelcome(final Player player) {
                         default -> "Please update to version " + Main.this.latestVersion + " (current: " + Main.CURRENT_VERSION + ")";
                     };
 
-                    Main.this.getLogger().warning(newVersionText);
-                    Main.this.getLogger().warning(updateToVersionText);
-                    Main.this.getLogger().warning("Modrinth: " + Main.this.buildUpdateLink());
-                    Main.this.getLogger().warning("GitHub: https://github.com/blax-k/SpawnElytra/releases");
+                    Main.this.getLogger().warning(newVersionText + " " + updateToVersionText);
+                    Main.this.getLogger().warning("Download: " + Main.this.buildUpdateLink());
                 } else {
                     Main.this.updateAvailable = false;
                     Main.this.latestVersion = null;
@@ -1111,7 +1114,7 @@ public void sendFirstInstallWelcome(final Player player) {
         }
     }
 
-    private static @NotNull String getString(final JsonElement root) throws IOException {
+    static @NotNull String getString(final JsonElement root) throws IOException {
         if (!root.isJsonArray()) {
             throw new IOException("Unexpected response from Modrinth");
         }
@@ -1139,4 +1142,3 @@ public void sendFirstInstallWelcome(final Player player) {
     }
 
 }
-

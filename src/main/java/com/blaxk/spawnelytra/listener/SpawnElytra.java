@@ -64,6 +64,8 @@ public class SpawnElytra implements Listener {
     private final int multiplyValue;
     private final int spawnRadius;
     private final boolean boostEnabled;
+    private final int maxBoosts;
+    private final long boostCooldownMs;
     private final World world;
     private final List<Player> flying = new ArrayList<>();
     private final List<Player> boosted = new ArrayList<>();
@@ -95,6 +97,8 @@ public class SpawnElytra implements Listener {
     private final Map<UUID, Location> hungerLastLocation = new HashMap<>();
 
     private final Map<UUID, Long> sneakJumpCooldown = new HashMap<>();
+    private final Map<UUID, Long> boostCooldown = new HashMap<>();
+    private final Map<UUID, Integer> boostUseCount = new HashMap<>();
     private final Map<UUID, Boolean> sneakPressed = new HashMap<>();
     private final Set<UUID> spawnElytraAllowFlight = new HashSet<>();
     private final Map<UUID, SchedulerUtil.TaskHandle> visualizationTasks = new HashMap<>();
@@ -111,6 +115,8 @@ public class SpawnElytra implements Listener {
         multiplyValue = worldConfig.getInt("boost.strength", 2);
         spawnRadius = worldConfig.getInt("radius", 100);
         boostEnabled = worldConfig.getBoolean("boost.enabled", true);
+        maxBoosts = Math.max(1, worldConfig.getInt("boost.max_boosts", 1));
+        boostCooldownMs = Math.max(0L, (long) (worldConfig.getDouble("boost.boost_cooldown", 0) * 1000));
         disableInCreative = plugin.getConfig().getBoolean("game_modes.disable_in_creative", true);
         disableInAdventure = plugin.getConfig().getBoolean("game_modes.disable_in_adventure", false);
         playerDataManager = plugin.getPlayerDataManager();
@@ -455,7 +461,7 @@ public class SpawnElytra implements Listener {
                     return;
                 }
 
-                if (ticksElapsed == 0 % visualizationUpdateFrequency) {
+                if (ticksElapsed % visualizationUpdateFrequency == 0) {
                     SpawnElytra.this.showAreaParticles(player);
                 }
 
@@ -699,7 +705,12 @@ public class SpawnElytra implements Listener {
         }
 
         if (this.plugin.getConfig().getBoolean("messages.show_press_to_boost", true) && this.boostEnabled) {
-            MessageUtil.sendActionBar(player, "press_to_boost");
+            if (this.maxBoosts > 1) {
+                MessageUtil.sendActionBar(player, "press_to_boost_remaining",
+                        Placeholder.unparsed("remaining", String.valueOf(this.maxBoosts)));
+            } else {
+                MessageUtil.sendActionBar(player, "press_to_boost");
+            }
         }
 
         flying.add(player);
@@ -708,9 +719,13 @@ public class SpawnElytra implements Listener {
     }
 
     private void disableElytraFlight(final Player player) {
-        player.setAllowFlight(false);
+        this.revokeSpawnElytraAllowFlight(player);
         player.setGliding(false);
+        flying.remove(player);
         boosted.remove(player);
+        final UUID uuid = player.getUniqueId();
+        this.boostCooldown.remove(uuid);
+        this.boostUseCount.remove(uuid);
         this.resetHungerTracking(player);
     }
 
@@ -798,7 +813,7 @@ public class SpawnElytra implements Listener {
                     final long currentTime = System.currentTimeMillis();
                     final Long lastActivation = this.sneakJumpCooldown.get(playerUUID);
 
-                    if (lastActivation == null || currentTime > 1000 - lastActivation) {
+                    if (lastActivation == null || (currentTime - lastActivation) >= 1000) {
                         this.activateElytraFlight(player);
                         this.sneakJumpCooldown.put(playerUUID, currentTime);
                     }
@@ -927,31 +942,75 @@ public class SpawnElytra implements Listener {
             return;
         }
 
-        if (flying.contains(player) &&
-                !boosted.contains(player) &&
-                player.isGliding()) {
+        if (!flying.contains(player) || !player.isGliding()) {
+            return;
+        }
 
-            event.setCancelled(true);
+        final UUID uuid = player.getUniqueId();
+        final int usedBoosts = this.boostUseCount.getOrDefault(uuid, 0);
+
+        if (usedBoosts >= this.maxBoosts) {
+            return;
+        }
+
+        if (this.boostCooldownMs > 0) {
+            final long now = System.currentTimeMillis();
+            final Long lastBoost = this.boostCooldown.get(uuid);
+            if (lastBoost != null && (now - lastBoost) < this.boostCooldownMs) {
+                return;
+            }
+        }
+
+        event.setCancelled(true);
+
+        final int newCount = usedBoosts + 1;
+        this.boostUseCount.put(uuid, newCount);
+        if (this.boostCooldownMs > 0) {
+            this.boostCooldown.put(uuid, System.currentTimeMillis());
+        }
+        if (newCount >= this.maxBoosts) {
             boosted.add(player);
+        }
 
-            final Vector velocity;
-            if ("upward".equalsIgnoreCase(boostDirection)) {
-                velocity = new Vector(0, multiplyValue, 0);
+        final Vector velocity;
+        if ("upward".equalsIgnoreCase(boostDirection)) {
+            velocity = new Vector(0, multiplyValue, 0);
+        } else {
+            velocity = player.getLocation().getDirection().multiply(multiplyValue);
+        }
+
+        player.setVelocity(velocity);
+
+        if (playerDataManager != null) {
+            this.playerDataManager.incrementBoostCount(player);
+        }
+
+        player.playSound(player.getLocation(), boostSound, 1.0f, 1.0f);
+
+        final int remaining = this.maxBoosts - newCount;
+        final boolean showBoostActivated = this.plugin.getConfig().getBoolean("messages.show_boost_activated", true);
+        final boolean showPressToBoost = this.plugin.getConfig().getBoolean("messages.show_press_to_boost", true);
+
+        if (showBoostActivated) {
+            if (remaining > 0 && this.maxBoosts > 1) {
+                MessageUtil.sendActionBar(player, "boost_activated_remaining",
+                        Placeholder.unparsed("remaining", String.valueOf(remaining)));
             } else {
-                velocity = player.getLocation().getDirection().multiply(multiplyValue);
-            }
-
-            player.setVelocity(velocity);
-
-            if (playerDataManager != null) {
-                this.playerDataManager.incrementBoostCount(player);
-            }
-
-            player.playSound(player.getLocation(), boostSound, 1.0f, 1.0f);
-
-            if (this.plugin.getConfig().getBoolean("messages.show_boost_activated", true)) {
                 MessageUtil.sendActionBar(player, "boost_activated");
             }
+        }
+
+        if (remaining > 0 && showPressToBoost && this.maxBoosts > 1) {
+            final long delayTicks = this.boostCooldownMs > 0 ? Math.max(20L, this.boostCooldownMs / 50) : 30L;
+            SchedulerUtil.runAtEntityLater(this.plugin, player, delayTicks, () -> {
+                if (flying.contains(player) && player.isGliding()) {
+                    final int currentRemaining = this.maxBoosts - this.boostUseCount.getOrDefault(uuid, 0);
+                    if (currentRemaining > 0) {
+                        MessageUtil.sendActionBar(player, "press_to_boost_remaining",
+                                Placeholder.unparsed("remaining", String.valueOf(currentRemaining)));
+                    }
+                }
+            });
         }
     }
 
@@ -989,7 +1048,6 @@ public class SpawnElytra implements Listener {
             if (this.flying.contains(player)) {
                 SchedulerUtil.runAtEntityLater(this.plugin, player, 1L, () -> {
                     this.disableElytraFlight(player);
-                    this.flying.remove(player);
 
                     SchedulerUtil.runAtEntityLater(this.plugin, player, 5L, () -> {
                         player.setAllowFlight(true);

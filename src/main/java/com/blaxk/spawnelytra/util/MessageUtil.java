@@ -72,7 +72,9 @@ public enum MessageUtil {
         SMALL_CAPS_MAP = Collections.unmodifiableMap(smallCaps);
 
         MessageUtil.DEFAULT_MESSAGES.put("press_to_boost", "<#91f251>Press <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>to boost yourself");
+        MessageUtil.DEFAULT_MESSAGES.put("press_to_boost_remaining", "<#91f251>Press <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>to boost <#ffd166>(<remaining> remaining)");
         MessageUtil.DEFAULT_MESSAGES.put("boost_activated", "<#74ea31><bold>Boost activated!</bold>");
+        MessageUtil.DEFAULT_MESSAGES.put("boost_activated_remaining", "<#74ea31><bold>Boost activated!</bold> <#ffd166>(<remaining> remaining)");
 
         MessageUtil.DEFAULT_MESSAGES.put("failed_update_check", "<#fd5e5e>Failed to check for updates: <error_message>");
         MessageUtil.DEFAULT_MESSAGES.put("creative_mode_elytra_disabled", "<#ffeea2>Elytra flight disabled in Creative mode.");

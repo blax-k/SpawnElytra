@@ -18,24 +18,30 @@ public enum LanguageUpdater {
     ;
     private static final List<String> SUPPORTED = Arrays.asList("en", "de", "es", "fr", "ar", "pl");
     private static final List<String> DEPRECATED = Arrays.asList("hi", "zh");
-    private static final String REQUIRED_LANG_VERSION = "1.4";
+    private static final String REQUIRED_LANG_VERSION = "1.5";
 
     public static void updateLanguages(final JavaPlugin plugin) {
+        LanguageUpdater.updateLanguages(plugin, false);
+    }
+
+    public static void updateLanguages(final JavaPlugin plugin, final boolean removeDeprecated) {
         final File dataFolder = plugin.getDataFolder();
         final File langDir = new File(dataFolder, "lang");
         if (!langDir.exists() && !langDir.mkdirs()) {
-            plugin.getLogger().warning("Failed to create language directory at: " + langDir.getAbsolutePath());
+            plugin.getLogger().warning("Failed to create language directory: " + langDir.getAbsolutePath());
             return;
         }
 
-        for (final String code : LanguageUpdater.DEPRECATED) {
-            final File f = new File(langDir, code + ".yml");
-            if (f.exists()) {
-                BackupUtil.backupFile(plugin, f, "lang/" + f.getName());
-                try {
-                    Files.deleteIfExists(f.toPath());
-                } catch (final IOException e) {
-                    plugin.getLogger().warning("Failed to delete unsupported language file '" + f.getName() + "': " + e.getMessage());
+        if (removeDeprecated) {
+            for (final String code : LanguageUpdater.DEPRECATED) {
+                final File f = new File(langDir, code + ".yml");
+                if (f.exists()) {
+                    BackupUtil.backupFile(plugin, f, "lang/" + f.getName());
+                    try {
+                        Files.deleteIfExists(f.toPath());
+                    } catch (final IOException e) {
+                        plugin.getLogger().warning("Failed to delete deprecated language file '" + f.getName() + "': " + e.getMessage());
+                    }
                 }
             }
         }
@@ -59,7 +65,7 @@ public enum LanguageUpdater {
                     if (in != null) {
                         Files.write(f.toPath(), in.readAllBytes());
                     } else {
-                        plugin.getLogger().warning("Missing bundled resource for language '" + code + "' during update.");
+                        plugin.getLogger().warning("Missing bundled resource for '" + code + ".yml'.");
                     }
                 } catch (final IOException e) {
                     plugin.getLogger().warning("Failed to update language file '" + code + ".yml': " + e.getMessage());

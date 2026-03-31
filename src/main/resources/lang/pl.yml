@@ -1,6 +1,8 @@
-﻿# English language file
+﻿# Polish language file
 press_to_boost: "<#91f251>Naciśnij <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>aby się zboostować"
+press_to_boost_remaining: "<#91f251>Naciśnij <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>aby się zboostować <#ffd166>(<remaining> pozostało)"
 boost_activated: "<#74ea31>Boost aktywowany!"
+boost_activated_remaining: "<#74ea31>Boost aktywowany! <#ffd166>(<remaining> pozostało)"
 failed_update_check: "<#fd5e5e>Nie udało się sprawdzić dostępności akturalizacji: <error_message>"
 no_permission: "<#fd5e5e>Nie masz uprawnień do użycia tej komendy."
 command_player_only: "<#fd5e5e>Ta komenda może być wykonana tylko przez graczy."
@@ -78,4 +80,4 @@ activation_mode_hover_sneak_jump: "<#91f251>Aktywuj elytrę podczas kucania kied
 activation_mode_hover_f_key: "<#91f251>Aktywuj elytrę przyciskiem F (przerzucenie do drugiej ręki)"
 
 # Please do not change
-lang-version: 1.4
+lang-version: 1.5
