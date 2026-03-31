@@ -2,9 +2,11 @@ package com.blaxk.spawnelytra.listener;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -28,6 +30,7 @@ import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
@@ -93,6 +96,7 @@ public class SpawnElytra implements Listener {
 
     private final Map<UUID, Long> sneakJumpCooldown = new HashMap<>();
     private final Map<UUID, Boolean> sneakPressed = new HashMap<>();
+    private final Set<UUID> spawnElytraAllowFlight = new HashSet<>();
     private final Map<UUID, SchedulerUtil.TaskHandle> visualizationTasks = new HashMap<>();
 
     private final int visualizationVerticalRange;
@@ -615,7 +619,68 @@ public class SpawnElytra implements Listener {
         return true;
     }
 
+    private boolean isExternalFlyActive(final Player player) {
+        final GameMode mode = player.getGameMode();
+        if (GameMode.CREATIVE == mode || GameMode.SPECTATOR == mode) {
+            return true;
+        }
+        if (player.isFlying()) {
+            return true;
+        }
+        return player.getAllowFlight() && !this.spawnElytraAllowFlight.contains(player.getUniqueId());
+    }
+
+    private boolean shouldPrimeDoubleJump(final Player player, final boolean inArea) {
+        return inArea
+                && player.hasPermission("spawnelytra.use")
+                && this.isElytraAllowedInMode(player)
+                && !this.isExternalFlyActive(player)
+                && !player.isGliding()
+                && !flying.contains(player);
+    }
+
+    private void grantSpawnElytraAllowFlight(final Player player) {
+        final UUID uuid = player.getUniqueId();
+        if (this.spawnElytraAllowFlight.add(uuid)) {
+            player.setAllowFlight(true);
+        }
+    }
+
+    private void updateTemporaryAllowFlight(final Player player, final boolean inArea) {
+        if (this.isExternalFlyActive(player)) {
+            return;
+        }
+        if (this.shouldPrimeDoubleJump(player, inArea)) {
+            this.grantSpawnElytraAllowFlight(player);
+            return;
+        }
+        if (!inArea && !flying.contains(player)) {
+            this.revokeSpawnElytraAllowFlight(player);
+        }
+    }
+
+    private void revokeSpawnElytraAllowFlight(final Player player) {
+        final UUID uuid = player.getUniqueId();
+        if (this.spawnElytraAllowFlight.remove(uuid)) {
+            player.setAllowFlight(false);
+        }
+    }
+
+    private boolean isFlyToggleCommand(final String message) {
+        if (message == null || message.isBlank()) {
+            return false;
+        }
+        final String trimmed = message.charAt(0) == '/' ? message.substring(1) : message;
+        final int spaceIndex = trimmed.indexOf(' ');
+        final String command = (spaceIndex >= 0 ? trimmed.substring(0, spaceIndex) : trimmed).toLowerCase(Locale.ROOT);
+        return "fly".equals(command) || "essentials:fly".equals(command) || "essentialsx:fly".equals(command);
+    }
+
     private void activateElytraFlight(final Player player) {
+        if (this.isExternalFlyActive(player)) {
+            return;
+        }
+
         if (this.hungerEnabled && HungerMode.ACTIVATION == hungerMode) {
             if (!this.shouldConsumeHunger(player)) {
                 MessageUtil.sendActionBar(player, "not_enough_hunger");
@@ -627,8 +692,7 @@ public class SpawnElytra implements Listener {
         }
 
         player.setGliding(true);
-
-        player.setAllowFlight(false);
+        this.revokeSpawnElytraAllowFlight(player);
 
         if (playerDataManager != null) {
             this.playerDataManager.incrementFlyCount(player);
@@ -655,7 +719,15 @@ public class SpawnElytra implements Listener {
         if (!this.isValid()) {
             return;
         }
-        
+
+        if (!"double_jump".equalsIgnoreCase(activationMode)) {
+            return;
+        }
+
+        if (!event.isFlying()) {
+            return;
+        }
+
         final Player player = event.getPlayer();
 
         if (!player.hasPermission("spawnelytra.use")) {
@@ -666,7 +738,11 @@ public class SpawnElytra implements Listener {
             return;
         }
 
-            if (this.isElytraAllowedInMode(player) && isInSpawnArea(player)) {
+        if (this.isExternalFlyActive(player)) {
+            return;
+        }
+
+        if (this.isElytraAllowedInMode(player) && isInSpawnArea(player)) {
             event.setCancelled(true);
 
             if (player.isGliding()) {
@@ -677,9 +753,7 @@ public class SpawnElytra implements Listener {
                 return;
             }
 
-            if ("double_jump".equalsIgnoreCase(activationMode)) {
-                this.activateElytraFlight(player);
-            }
+            this.activateElytraFlight(player);
         }
     }
 
@@ -708,6 +782,10 @@ public class SpawnElytra implements Listener {
             return;
         }
 
+        if (this.isExternalFlyActive(player)) {
+            return;
+        }
+
         if (event.isSneaking()) {
             this.sneakPressed.put(playerId, true);
 
@@ -733,6 +811,28 @@ public class SpawnElytra implements Listener {
     }
 
     @EventHandler
+    public void onPlayerCommandPreprocess(final PlayerCommandPreprocessEvent event) {
+        if (!this.isValid()) {
+            return;
+        }
+
+        if (!"double_jump".equalsIgnoreCase(this.activationMode)) {
+            return;
+        }
+
+        final Player player = event.getPlayer();
+        if (!this.spawnElytraAllowFlight.contains(player.getUniqueId())) {
+            return;
+        }
+
+        if (!this.isFlyToggleCommand(event.getMessage())) {
+            return;
+        }
+
+        this.revokeSpawnElytraAllowFlight(player);
+    }
+
+    @EventHandler
     public void onPlayerMove(final PlayerMoveEvent event) {
         if (!this.isValid()) {
             return;
@@ -743,7 +843,9 @@ public class SpawnElytra implements Listener {
         if (this.isElytraAllowedInMode(player)) {
             final boolean inArea = isInSpawnArea(player);
 
-            player.setAllowFlight(inArea && !player.isGliding());
+            if ("double_jump".equalsIgnoreCase(activationMode)) {
+                this.updateTemporaryAllowFlight(player, inArea);
+            }
 
             if ("auto".equalsIgnoreCase(activationMode)
                     && inArea
@@ -752,6 +854,7 @@ public class SpawnElytra implements Listener {
                     && !player.isOnGround()
                     && !player.isFlying()
                     && !player.isGliding()
+                    && !this.isExternalFlyActive(player)
                     && player.hasPermission("spawnelytra.use")) {
                 this.activateElytraFlight(player);
             }
@@ -803,7 +906,7 @@ public class SpawnElytra implements Listener {
             }
 
             if (this.isElytraAllowedInMode(player) && isInSpawnArea(player)) {
-                if (!flying.contains(player)) {
+                if (!flying.contains(player) && !this.isExternalFlyActive(player)) {
                     event.setCancelled(true);
 
                     final Vector launchVelocity = new Vector(0, fKeyLaunchStrength, 0);
@@ -870,7 +973,7 @@ public class SpawnElytra implements Listener {
                 event.setCancelled(true);
             } else {
 
-                player.setAllowFlight(false);
+                this.revokeSpawnElytraAllowFlight(player);
             }
         }
     }
@@ -920,6 +1023,17 @@ public class SpawnElytra implements Listener {
         final GameMode mode = player.getGameMode();
         if (GameMode.SURVIVAL == mode) return true;
         return GameMode.ADVENTURE == mode && !this.disableInAdventure;
+    }
+
+    public void cleanupPlayer(final Player player) {
+        if (flying.contains(player)) {
+            this.disableElytraFlight(player);
+        } else {
+            this.revokeSpawnElytraAllowFlight(player);
+        }
+        final UUID uuid = player.getUniqueId();
+        this.sneakJumpCooldown.remove(uuid);
+        this.sneakPressed.remove(uuid);
     }
 
     public void stopVisualization(final Player player) {

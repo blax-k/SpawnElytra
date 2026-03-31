@@ -154,6 +154,7 @@ if (versionCheckTask != null) {
         for (final SpawnElytra instance : this.worldInstances.values()) {
             if (instance != null) {
                 for (final Player player : Bukkit.getOnlinePlayers()) {
+                    instance.cleanupPlayer(player);
                     instance.stopVisualization(player);
                 }
             }
@@ -1018,6 +1019,7 @@ public void sendFirstInstallWelcome(final Player player) {
         for (final SpawnElytra instance : this.worldInstances.values()) {
             if (instance != null) {
                 for (final Player player : Bukkit.getOnlinePlayers()) {
+                    instance.cleanupPlayer(player);
                     instance.stopVisualization(player);
                 }
             }
