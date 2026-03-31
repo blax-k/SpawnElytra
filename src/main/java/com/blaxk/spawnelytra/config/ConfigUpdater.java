@@ -19,38 +19,42 @@ import java.util.Locale;
 public enum ConfigUpdater {
     ;
     private static final List<String> SUPPORTED_LANGUAGES = Arrays.asList("en", "de", "es", "fr", "ar", "pl");
-    private static final String CONFIG_VERSION_1_4 = "1.4";
+    private static final String CURRENT_CONFIG_VERSION = "1.5";
     
-    public static void updateConfig(final JavaPlugin plugin) {
+    public static boolean updateConfig(final JavaPlugin plugin) {
         final File configFile = new File(plugin.getDataFolder(), "config.yml");
         
         if (!configFile.exists()) {
             plugin.saveDefaultConfig();
-            return;
+            return false;
         }
         
         final FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
         final ConfigVersion version = ConfigUpdater.detectConfigVersion(config);
         
+        boolean migratedFromV13 = false;
+        
         switch (version) {
             case V1_2:
-                plugin.getLogger().info("Detected v1.2 configuration. Migrating to v1.4...");
+                plugin.getLogger().info("Detected v1.2 config. Migrating to v1.4...");
                 ConfigUpdater.migrateFromV12(plugin, config, configFile);
                 break;
             case V1_3:
-                plugin.getLogger().info("Detected v1.3 configuration. Migrating to v1.4...");
+                plugin.getLogger().info("Detected v1.3 config. Migrating to v1.4...");
                 ConfigUpdater.migrateFromV13(plugin, config, configFile);
+                migratedFromV13 = true;
                 break;
             case V1_4:
                 ConfigUpdater.updateV14Config(plugin, config, configFile);
                 break;
             case UNKNOWN:
-                plugin.getLogger().warning("Unknown configuration format. Creating backup and generating new config.");
+                plugin.getLogger().warning("Unknown config format. Creating backup and generating new config.");
                 ConfigUpdater.createBackupAndGenerateNew(plugin, configFile);
                 break;
         }
         
         plugin.reloadConfig();
+        return migratedFromV13;
     }
 
     private enum ConfigVersion {
@@ -216,9 +220,9 @@ public enum ConfigUpdater {
             try {
                 BackupUtil.backupFile(plugin, configFile, "config/config.yml");
                 config.save(configFile);
-                plugin.getLogger().info("Updated v1.4 configuration with missing fields.");
+                plugin.getLogger().info("Updated v1.4 config with missing fields.");
             } catch (final IOException e) {
-                plugin.getLogger().severe("Failed to save updated v1.4 configuration: " + e.getMessage());
+                plugin.getLogger().severe("Failed to save v1.4 config: " + e.getMessage());
             }
         }
     }
@@ -237,7 +241,7 @@ public enum ConfigUpdater {
             
             
             lines.add("# Spawn Elytra Plugin by blaxk");
-            lines.add("# Plugin Version: " + ConfigUpdater.CONFIG_VERSION_1_4);
+            lines.add("# Plugin Version: " + ConfigUpdater.CURRENT_CONFIG_VERSION);
             lines.add("# Modrinth: https://modrinth.com/plugin/spawn-elytra");
             lines.add("");
             lines.add("# ==========================================");
@@ -360,6 +364,10 @@ public enum ConfigUpdater {
             lines.add("      # forward: Boosts player in the direction they are looking");
             lines.add("      # upward: Boosts player straight up");
             lines.add("      direction: " + boostDirection);
+            lines.add("      # Maximum number of boosts allowed per elytra flight (1 = single boost)");
+            lines.add("      max_boosts: 1");
+            lines.add("      # Cooldown in seconds between boosts (0 = no cooldown, only applies when max_boosts > 1)");
+            lines.add("      boost_cooldown: 0");
             lines.add("      # Boost sound effect - can be any sound from https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html");
             lines.add("      # Examples: ENTITY_BAT_TAKEOFF, ENTITY_FIREWORK_ROCKET_BLAST, ITEM_ELYTRA_FLYING");
             lines.add("      sound: " + boostSound);
@@ -372,18 +380,16 @@ public enum ConfigUpdater {
             final String content = String.join(System.lineSeparator(), lines) + System.lineSeparator();
             Files.writeString(configFile.toPath(), content, StandardCharsets.UTF_8);
             
-            plugin.getLogger().info("Successfully generated v1.4 configuration.");
+            plugin.getLogger().info("Generated v1.4 config.");
             
         } catch (final IOException e) {
-            plugin.getLogger().severe("Failed to generate v1.4 configuration: " + e.getMessage());
+            plugin.getLogger().severe("Failed to generate v1.4 config: " + e.getMessage());
         }
     }
-    
     
     private static void createBackup(final JavaPlugin plugin, final File configFile) {
         BackupUtil.backupFile(plugin, configFile, "config/config.yml");
     }
-    
     
     private static void createBackupAndGenerateNew(final JavaPlugin plugin, final File configFile) {
         ConfigUpdater.createBackup(plugin, configFile);

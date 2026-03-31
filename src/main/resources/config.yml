@@ -1,5 +1,5 @@
 # Spawn Elytra Plugin by blaxk
-# Plugin Version: 1.4
+# Plugin Version: 1.5
 # Modrinth: https://modrinth.com/plugin/spawn-elytra
 
 # ==========================================
@@ -123,6 +123,10 @@ worlds:
       # forward: Boosts player in the direction they are looking
       # upward: Boosts player straight up
       direction: forward
+      # Maximum number of boosts allowed per elytra flight (1 = single boost)
+      max_boosts: 1
+      # Cooldown in seconds between boosts (0 = no cooldown, only applies when max_boosts > 1)
+      boost_cooldown: 0
       # Boost sound effect - can be any sound from https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html
       # Examples: ENTITY_BAT_TAKEOFF, ENTITY_FIREWORK_ROCKET_BLAST, ITEM_ELYTRA_FLYING
       sound: ENTITY_BAT_TAKEOFF

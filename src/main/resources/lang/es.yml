@@ -1,6 +1,8 @@
 # Spanish language file
 press_to_boost: "<#91f251>Presiona <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>para impulsarte"
+press_to_boost_remaining: "<#91f251>Presiona <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>para impulsarte <#ffd166>(<remaining> restantes)"
 boost_activated: "<#74ea31>¡Impulso activado!"
+boost_activated_remaining: "<#74ea31>¡Impulso activado! <#ffd166>(<remaining> restantes)"
 failed_update_check: "<#fd5e5e>Error al comprobar actualizaciones: <error_message>"
 no_permission: "<#fd5e5e>No tienes permiso para usar este comando."
 command_player_only: "<#fd5e5e>Este comando solo puede ser usado por jugadores."
@@ -77,4 +79,4 @@ activation_mode_hover_sneak_jump: "<#91f251>Activar elytra agachándose al salta
 activation_mode_hover_f_key: "<#91f251>Activar elytra con tecla F (intercambiar manos)"
 
 # Por favor no cambies
-lang-version: 1.4
+lang-version: 1.5

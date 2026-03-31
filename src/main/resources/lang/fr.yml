@@ -1,6 +1,8 @@
 # French language file
 press_to_boost: "<#91f251>Appuyez sur <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>pour vous propulser"
+press_to_boost_remaining: "<#91f251>Appuyez sur <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>pour vous propulser <#ffd166>(<remaining> restants)"
 boost_activated: "<#74ea31>Propulsion activée !"
+boost_activated_remaining: "<#74ea31>Propulsion activée ! <#ffd166>(<remaining> restants)"
 failed_update_check: "<#fd5e5e>Échec de la vérification des mises à jour : <error_message>"
 no_permission: "<#fd5e5e>Vous n'avez pas la permission d'utiliser cette commande."
 command_player_only: "<#fd5e5e>Cette commande est réservée aux joueurs."
@@ -77,4 +79,4 @@ activation_mode_hover_sneak_jump: "<#91f251>Activer l'élytre en s'accroupissant
 activation_mode_hover_f_key: "<#91f251>Activer l'élytre avec la touche F (échanger les mains)"
 
 # S'il vous plaît ne changez pas
-lang-version: 1.4
+lang-version: 1.5

@@ -1,5 +1,5 @@
 ﻿name: SpawnElytra
-version: 1.4
+version: ${version}
 main: com.blaxk.spawnelytra.Main
 description: Players can use an invisible elytra in a defined area when double jumping
 author: blaxk

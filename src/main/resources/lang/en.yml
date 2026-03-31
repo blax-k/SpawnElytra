@@ -1,6 +1,8 @@
 ﻿# English language file
 press_to_boost: "<#91f251>Press <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>to boost yourself"
+press_to_boost_remaining: "<#91f251>Press <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>to boost <#ffd166>(<remaining> remaining)"
 boost_activated: "<#74ea31>Boost activated!"
+boost_activated_remaining: "<#74ea31>Boost activated! <#ffd166>(<remaining> remaining)"
 failed_update_check: "<#fd5e5e>Failed to check for updates: <error_message>"
 no_permission: "<#fd5e5e>You don't have permission to use this command."
 command_player_only: "<#fd5e5e>This command can only be used by players."
@@ -77,4 +79,4 @@ activation_mode_hover_sneak_jump: "<#91f251>Activate elytra by sneaking while ju
 activation_mode_hover_f_key: "<#91f251>Activate elytra with F key (swap hands)"
 
 # Please do not change
-lang-version: 1.4
+lang-version: 1.5
