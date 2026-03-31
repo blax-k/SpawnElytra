@@ -6,7 +6,7 @@ author: blaxk
 website: https://modrinth.com/plugin/spawn-elytra
 prefix: Spawn Elytra
 api-version: 1.21
-folia-supported: false
+folia-supported: true
 
 softdepend: [PlaceholderAPI]
 
