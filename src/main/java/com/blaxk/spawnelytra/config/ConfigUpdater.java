@@ -1,7 +1,6 @@
 package com.blaxk.spawnelytra.config;
 
 import com.blaxk.spawnelytra.util.BackupUtil;
-import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -12,13 +11,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
 public enum ConfigUpdater {
     ;
-    private static final List<String> SUPPORTED_LANGUAGES = Arrays.asList("en", "de", "es", "fr", "ar", "pl");
     private static final String CURRENT_CONFIG_VERSION = "1.5";
     
     public static boolean updateConfig(final JavaPlugin plugin) {
@@ -36,16 +32,16 @@ public enum ConfigUpdater {
         
         switch (version) {
             case V1_2:
-                plugin.getLogger().info("Detected v1.2 config. Migrating to v1.4...");
+                plugin.getLogger().info("Detected v1.2 config. Migrating to v" + ConfigUpdater.CURRENT_CONFIG_VERSION + "...");
                 ConfigUpdater.migrateFromV12(plugin, config, configFile);
                 break;
             case V1_3:
-                plugin.getLogger().info("Detected v1.3 config. Migrating to v1.4...");
+                plugin.getLogger().info("Detected v1.3 config. Migrating to v" + ConfigUpdater.CURRENT_CONFIG_VERSION + "...");
                 ConfigUpdater.migrateFromV13(plugin, config, configFile);
                 migratedFromV13 = true;
                 break;
-            case V1_4:
-                ConfigUpdater.updateV14Config(plugin, config, configFile);
+            case MODERN:
+                ConfigUpdater.updateModernConfig(plugin, config, configFile);
                 break;
             case UNKNOWN:
                 plugin.getLogger().warning("Unknown config format. Creating backup and generating new config.");
@@ -60,13 +56,14 @@ public enum ConfigUpdater {
     private enum ConfigVersion {
         V1_2,
         V1_3,
-        V1_4,
+        /** The current nested {@code worlds.*} schema (introduced in 1.4, still used by 1.5+). */
+        MODERN,
         UNKNOWN
     }
     
     private static ConfigVersion detectConfigVersion(final FileConfiguration config) {
         if (config.contains("worlds")) {
-            return ConfigVersion.V1_4;
+            return ConfigVersion.MODERN;
         }
         
         if (config.contains("boost_enabled") || config.contains("disable_fireworks_in_spawn_elytra")) {
@@ -122,7 +119,7 @@ public enum ConfigUpdater {
             }
         }
 
-        ConfigUpdater.generateV14Config(plugin, configFile, language, activationMode, radius, strength, boostDirection,
+        ConfigUpdater.generateModernConfig(plugin, configFile, language, activationMode, radius, strength, boostDirection,
                 world, mode, spawnX, spawnY, spawnZ, spawnX2, spawnY2, spawnZ2, boostSound,
                 disableInCreative, disableInAdventure, showPressToBoost, showBoostActivated, 
                 true, false, 1.5);
@@ -172,13 +169,13 @@ public enum ConfigUpdater {
             }
         }
 
-        ConfigUpdater.generateV14Config(plugin, configFile, language, activationMode, radius, strength, boostDirection,
+        ConfigUpdater.generateModernConfig(plugin, configFile, language, activationMode, radius, strength, boostDirection,
                 world, mode, spawnX, spawnY, spawnZ, spawnX2, spawnY2, spawnZ2, boostSound,
                 disableInCreative, disableInAdventure, showPressToBoost, showBoostActivated, 
                 boostEnabled, disableFireworks, fKeyLaunchStrength);
     }
     
-    private static void updateV14Config(final JavaPlugin plugin, final FileConfiguration config, final File configFile) {
+    private static void updateModernConfig(final JavaPlugin plugin, final FileConfiguration config, final File configFile) {
         boolean needsUpdate = false;
         
         if (!config.contains("language")) {
@@ -220,15 +217,15 @@ public enum ConfigUpdater {
             try {
                 BackupUtil.backupFile(plugin, configFile, "config/config.yml");
                 config.save(configFile);
-                plugin.getLogger().info("Updated v1.4 config with missing fields.");
+                plugin.getLogger().info("Updated v" + ConfigUpdater.CURRENT_CONFIG_VERSION + " config with missing fields.");
             } catch (final IOException e) {
-                plugin.getLogger().severe("Failed to save v1.4 config: " + e.getMessage());
+                plugin.getLogger().severe("Failed to save v" + ConfigUpdater.CURRENT_CONFIG_VERSION + " config: " + e.getMessage());
             }
         }
     }
     
     
-    private static void generateV14Config(final JavaPlugin plugin, final File configFile, final String language,
+    private static void generateModernConfig(final JavaPlugin plugin, final File configFile, final String language,
                                           final String activationMode, final int radius, final int strength, final String boostDirection,
                                           final String worldName, final String spawnMode, final int spawnX, final int spawnY, final int spawnZ,
                                           final int spawnX2, final int spawnY2, final int spawnZ2, final String boostSound,
@@ -279,7 +276,7 @@ public enum ConfigUpdater {
             lines.add("  show_boost_activated: " + showBoostActivated);
             lines.add("  # Set to true to show an actionbar when Elytra is disabled in Creative mode");
             lines.add("  show_creative_disabled: false");
-            lines.add("  # Message style: classic or modern");
+            lines.add("  # Message style: classic or small_caps");
             lines.add("  style: classic");
             lines.add("");
             
@@ -380,10 +377,10 @@ public enum ConfigUpdater {
             final String content = String.join(System.lineSeparator(), lines) + System.lineSeparator();
             Files.writeString(configFile.toPath(), content, StandardCharsets.UTF_8);
             
-            plugin.getLogger().info("Generated v1.4 config.");
+            plugin.getLogger().info("Generated v" + ConfigUpdater.CURRENT_CONFIG_VERSION + " config.");
             
         } catch (final IOException e) {
-            plugin.getLogger().severe("Failed to generate v1.4 config: " + e.getMessage());
+            plugin.getLogger().severe("Failed to generate v" + ConfigUpdater.CURRENT_CONFIG_VERSION + " config: " + e.getMessage());
         }
     }
     
@@ -394,27 +391,9 @@ public enum ConfigUpdater {
     private static void createBackupAndGenerateNew(final JavaPlugin plugin, final File configFile) {
         ConfigUpdater.createBackup(plugin, configFile);
 
-        ConfigUpdater.generateV14Config(plugin, configFile, "en", "double_jump", 100, 2, "forward",
+        ConfigUpdater.generateModernConfig(plugin, configFile, "en", "double_jump", 100, 2, "forward",
                 "world", "auto", 0, 64, 0, 0, 0, 0, "ENTITY_BAT_TAKEOFF",
                 true, false, true, true, true, false, 1.5);
-    }
-    
-    
-    private static String validateSound(final String sound) {
-        try {
-            Sound.valueOf(sound.toUpperCase());
-            return sound;
-        } catch (final IllegalArgumentException e) {
-            return "ENTITY_BAT_TAKEOFF"; 
-        }
-    }
-    
-    
-    private static String validateLanguage(final String language) {
-        if (ConfigUpdater.SUPPORTED_LANGUAGES.contains(language.toLowerCase())) {
-            return language.toLowerCase();
-        }
-        return "en"; 
     }
 }
 
