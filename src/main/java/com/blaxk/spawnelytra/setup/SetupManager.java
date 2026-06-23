@@ -1,9 +1,9 @@
 package com.blaxk.spawnelytra.setup;
 
 import com.blaxk.spawnelytra.Main;
+import com.blaxk.spawnelytra.util.DisplayNames;
 import com.blaxk.spawnelytra.util.MessageUtil;
 import com.blaxk.spawnelytra.util.SchedulerUtil;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
@@ -81,7 +81,7 @@ public class SetupManager implements Listener {
             case "sneak_jump":
             case "f_key":
                 session.setActivationMode(normalized);
-                MessageUtil.send(player, "setup_activation_mode_set", Placeholder.unparsed("value", this.prettyActivation(normalized)));
+                MessageUtil.send(player, "setup_activation_mode_set", Placeholder.unparsed("value", DisplayNames.activationMode(normalized)));
                 break;
             default:
                 MessageUtil.send(player, "setup_invalid_mode");
@@ -175,10 +175,10 @@ public class SetupManager implements Listener {
             current = this.plugin.getConfig().getString("worlds." + worldName + ".activation_mode", "double_jump");
         }
         final String text = "<#91f251>" +
-                this.option("/spawnelytra setup mode double_jump", this.prettyActivation("double_jump"), "activation_mode_hover_double_jump", "double_jump".equalsIgnoreCase(current)) + " " +
-                this.option("/spawnelytra setup mode auto", this.prettyActivation("auto"), "activation_mode_hover_auto", "auto".equalsIgnoreCase(current)) + " " +
-                this.option("/spawnelytra setup mode sneak_jump", this.prettyActivation("sneak_jump"), "activation_mode_hover_sneak_jump", "sneak_jump".equalsIgnoreCase(current)) + " " +
-                this.option("/spawnelytra setup mode f_key", this.prettyActivation("f_key"), "activation_mode_hover_f_key", "f_key".equalsIgnoreCase(current));
+                this.option("/spawnelytra setup mode double_jump", DisplayNames.activationMode("double_jump"), "activation_mode_hover_double_jump", "double_jump".equalsIgnoreCase(current)) + " " +
+                this.option("/spawnelytra setup mode auto", DisplayNames.activationMode("auto"), "activation_mode_hover_auto", "auto".equalsIgnoreCase(current)) + " " +
+                this.option("/spawnelytra setup mode sneak_jump", DisplayNames.activationMode("sneak_jump"), "activation_mode_hover_sneak_jump", "sneak_jump".equalsIgnoreCase(current)) + " " +
+                this.option("/spawnelytra setup mode f_key", DisplayNames.activationMode("f_key"), "activation_mode_hover_f_key", "f_key".equalsIgnoreCase(current));
         MessageUtil.sendRaw(player, MiniMessage.miniMessage().deserialize(text));
 
         
@@ -214,16 +214,6 @@ public class SetupManager implements Listener {
         final String toggleHover = MessageUtil.plain("toggle_hover");
         final String state = on ? ("<#91f251>" + onLabel) : ("<#fd5e5e>" + offLabel);
         return label + ": [<click:run_command:'" + cmd + "'><hover:show_text:'<#5db3ff>" + toggleHover + "'>" + state + "</hover></click>]";
-    }
-
-    private String prettyActivation(final String mode) {
-        return switch (mode.toLowerCase(Locale.ROOT)) {
-            case "double_jump" -> "Double Jump";
-            case "auto" -> "Auto";
-            case "sneak_jump" -> "Sneak Jump";
-            case "f_key" -> "F Key";
-            default -> mode;
-        };
     }
 
     @EventHandler
