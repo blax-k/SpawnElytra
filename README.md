@@ -1,17 +1,14 @@
 <div align="center">
   
 <img width="800" height=auto alt="image" src="https://github.com/user-attachments/assets/8eec0f17-e161-4c61-b6af-8eb1101b9900" />
+<br><br>
 
-
-![Downloads](https://img.shields.io/modrinth/dt/Egw2R8Fj?logo=modrinth&style=for-the-badge&label=Downloads&color=2C8904)
-![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/blax-k/spawnelytra?label=CodeFactor&style=for-the-badge&color=2C8904)
-![https://img.shields.io/github/license/blaxkkkk/SpawnElytra](https://img.shields.io/github/license/blax-k/SpawnElytra?&color=2C8904&label=License&style=for-the-badge)
-[![Docs](https://img.shields.io/badge/Docs-GitBook-blue?style=for-the-badge&logo=gitbook&color=2C8904)](https://blaxk.gitbook.io/spawnelytra)
-[![Build](https://img.shields.io/github/actions/workflow/status/blax-k/SpawnElytra/build.yml?branch=main&style=for-the-badge)](https://github.com/blax-k/SpawnElytra/actions/workflows/build.yml)
+![Downloads](https://shieldcn.dev/modrinth/downloads/Egw2R8Fj.svg?logo=modrinth&label=Downloads&variant=outline)
+![CodeFactor](https://shieldcn.dev/badge/CodeFactor-A-green.svg?logo=codefactor&variant=outline)
+![License](https://shieldcn.dev/github/license/blax-k/SpawnElytra.svg?label=License&variant=outline)
+[![Docs](https://shieldcn.dev/badge/Docs-GitBook-blue.svg?logo=gitbook&variant=outline)](https://blaxk.gitbook.io/spawnelytra)
+[![Build](https://shieldcn.dev/github/ci/blax-k/SpawnElytra.svg?label=Build&variant=outline)](https://github.com/blax-k/SpawnElytra/actions/workflows/build.yml)
 <br>
-<img alt="spigot" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact-minimal/supported/spigot_vector.svg"> <img alt="purpur" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact-minimal/supported/purpur_vector.svg"> <img alt="paper" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact-minimal/supported/paper_vector.svg">
-<img alt="does not support fabric" height="40" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact-minimal/unsupported/fabric_vector.svg">
-</div>
 
 _Players can use an Elytra-like feature while in spawn and when leaving spawn. You can boost yourself once by pressing the offhand button._
 
