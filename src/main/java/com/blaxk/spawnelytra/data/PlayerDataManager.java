@@ -20,17 +20,18 @@ public class PlayerDataManager {
 
     public PlayerDataManager(final JavaPlugin plugin) {
         this.plugin = plugin;
-        dataFolder = new File(plugin.getDataFolder(), "playerdata");
+        this.dataFolder = new File(plugin.getDataFolder(), "playerdata");
+        this.ensureDataFolder();
+    }
 
-        if (!this.dataFolder.exists()) {
-            this.dataFolder.mkdirs();
+    private void ensureDataFolder() {
+        if (!this.dataFolder.exists() && !this.dataFolder.mkdirs()) {
+            this.plugin.getLogger().warning("Could not create playerdata folder: " + this.dataFolder.getAbsolutePath());
         }
     }
 
     public void initialize() {
-        if (!this.dataFolder.exists()) {
-            this.dataFolder.mkdirs();
-        }
+        this.ensureDataFolder();
 
         final File[] dataFiles = this.dataFolder.listFiles((dir, name) -> name.endsWith(".yml"));
         if (dataFiles != null) {
