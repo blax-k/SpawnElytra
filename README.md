@@ -11,6 +11,7 @@
 <br>
 
 _Players can use an Elytra-like feature while in spawn and when leaving spawn. You can boost yourself once by pressing the offhand button._
+</div>
 
 ## Features
 
