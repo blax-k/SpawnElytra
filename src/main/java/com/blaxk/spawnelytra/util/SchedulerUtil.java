@@ -76,20 +76,6 @@ public enum SchedulerUtil {
         return new BukkitTaskHandle(t);
     }
 
-    public static TaskHandle runSync(final Plugin plugin, final Runnable task) {
-        return runNow(plugin, task);
-    }
-
-    public static TaskHandle runLater(final Plugin plugin, final long delayTicks, final Runnable task) {
-        if (FOLIA) {
-            final io.papermc.paper.threadedregions.scheduler.ScheduledTask t =
-                    Bukkit.getGlobalRegionScheduler().runDelayed(plugin, scheduledTask -> task.run(), Math.max(1, delayTicks));
-            return new FoliaTaskHandle(t);
-        }
-        final BukkitTask t = Bukkit.getScheduler().runTaskLater(plugin, task, delayTicks);
-        return new BukkitTaskHandle(t);
-    }
-
     public static TaskHandle runAtEntityNow(final Plugin plugin, final Player entity, final Runnable task) {
         if (FOLIA) {
             final io.papermc.paper.threadedregions.scheduler.ScheduledTask t =

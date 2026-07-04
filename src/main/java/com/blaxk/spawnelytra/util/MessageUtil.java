@@ -203,7 +203,8 @@ public enum MessageUtil {
         final FileConfiguration config = plugin.getConfig();
         final String rawLanguage = config.getString("language", "en");
         final String language = MessageUtil.canonicalizeLanguageCode(rawLanguage);
-        final String style = config.getString("messages.style", "classic").toLowerCase(Locale.ROOT);
+        final String rawStyle = config.getString("messages.style", "classic");
+        final String style = (rawStyle == null ? "classic" : rawStyle).toLowerCase(Locale.ROOT);
 
         MessageUtil.messages.clear();
 
@@ -270,7 +271,7 @@ public enum MessageUtil {
             return "";
         }
         final Matcher matcher = MessageUtil.UPPERCASE_PLACEHOLDER_PATTERN.matcher(input);
-        final StringBuffer buffer = new StringBuffer();
+        final StringBuilder buffer = new StringBuilder();
         while (matcher.find()) {
             final String placeholder = matcher.group(1);
             final String normalized = MessageUtil.normalizePlaceholderName(placeholder);
@@ -297,7 +298,7 @@ public enum MessageUtil {
         return builder.toString();
     }
 
-    private static String toSmallCapsPreservingTags(final String input) {
+    public static String toSmallCapsPreservingTags(final String input) {
         if (input == null || input.isEmpty()) {
             return input;
         }
@@ -386,10 +387,6 @@ public enum MessageUtil {
         } else if (audiences != null) {
             MessageUtil.audiences.player(player).sendActionBar(component);
         }
-    }
-
-    public static boolean isMessageEnabled(final String key) {
-        return MessageUtil.messageToggles.getOrDefault(key, true);
     }
 
     public static void sendRaw(final Player player, final Component component) {

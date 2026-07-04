@@ -9,15 +9,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 public enum LanguageUpdater {
     ;
-    private static final List<String> SUPPORTED = Arrays.asList("en", "de", "es", "fr", "ar", "pl");
-    private static final List<String> DEPRECATED = Arrays.asList("hi", "zh");
+    private static final List<String> SUPPORTED = List.of("en", "de", "es", "fr", "ar", "pl");
+    private static final List<String> DEPRECATED = List.of("hi", "zh");
     private static final String REQUIRED_LANG_VERSION = "1.5";
 
     public static void updateLanguages(final JavaPlugin plugin) {

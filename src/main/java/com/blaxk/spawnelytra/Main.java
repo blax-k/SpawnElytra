@@ -29,7 +29,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -39,6 +38,7 @@ import java.util.Objects;
 import com.blaxk.spawnelytra.util.SchedulerUtil;
 import com.blaxk.spawnelytra.util.MessageUtil;
 import com.blaxk.spawnelytra.util.UpdateUtil;
+import com.blaxk.spawnelytra.util.DisplayNames;
 import com.blaxk.spawnelytra.command.CommandHandler;
 import com.blaxk.spawnelytra.config.ConfigUpdater;
 import com.blaxk.spawnelytra.config.LanguageUpdater;
@@ -262,8 +262,6 @@ public final class Main extends JavaPlugin implements Listener {
             return;
         }
         
-        final String language = this.getConfig().getString("language", "en").toLowerCase(Locale.ROOT);
-        
         this.sendAutoUpdateMessage(sender, "update_starting", latestVersion);
         
         SchedulerUtil.runAsync(this, () -> {
@@ -355,17 +353,6 @@ public final class Main extends JavaPlugin implements Listener {
             default -> "<#aaa8a8>Unknown message: " + messageKey;
         };
         
-        return MiniMessage.miniMessage().deserialize(text);
-    }
-
-    private Component getSettingsPluginInfoMessage(final String language, final String version, final String author) {
-        final String text = switch (language) {
-            case "de" -> "<#fdba5e>Plugin-Version: <#91f251>" + version + "</#91f251> | Autor: <#91f251>" + author + "</#91f251>";
-            case "es" -> "<#fdba5e>Versión del plugin: <#91f251>" + version + "</#91f251> | Autor: <#91f251>" + author + "</#91f251>";
-            case "fr" -> "<#fdba5e>Version du plugin : <#91f251>" + version + "</#91f251> | Auteur : <#91f251>" + author + "</#91f251>";
-            case "pl" -> "<#fdba5e>Wersja pluginu : <#91f251>" + version + "</#91f251> | Autor : <#91f251>" + author + "</#91f251>";
-            default -> "<#fdba5e>Plugin Version: <#91f251>" + version + "</#91f251> | Author: <#91f251>" + author + "</#91f251>";
-        };
         return MiniMessage.miniMessage().deserialize(text);
     }
 
@@ -489,7 +476,7 @@ public final class Main extends JavaPlugin implements Listener {
         final String version = this.getDescription().getVersion();
         final String author = this.getDescription().getAuthors().isEmpty() ? "Unknown" : this.getDescription().getAuthors().getFirst();
 
-        MessageUtil.send(player, "settings_current_language", Placeholder.unparsed("value", this.prettyLanguage(currentLanguage)));
+        MessageUtil.send(player, "settings_current_language", Placeholder.unparsed("value", DisplayNames.language(currentLanguage)));
         MessageUtil.send(player, "settings_current_style", Placeholder.unparsed("value", this.prettyStyle(currentStyle)));
 
         final String activeWorlds = this.worldInstances.isEmpty() ? "-" : String.join(", ", this.worldInstances.keySet());
@@ -514,18 +501,6 @@ public final class Main extends JavaPlugin implements Listener {
         this.sendLanguageAndStyleChoices(player);
     }
 
-    private String prettyLanguage(final String lang) {
-        if (lang == null) return "-";
-        return switch (lang.toLowerCase(Locale.ROOT)) {
-            case "de" -> "Deutsch";
-            case "en" -> "English";
-            case "es" -> "Español";
-            case "fr" -> "Français";
-            case "pl" -> "Polski";
-            default -> lang;
-        };
-    }
-    
     private String prettyStyle(final String style) {
         if (style == null) return "-";
         final String lang = this.getConfig().getString("language", "en").toLowerCase(Locale.ROOT);
@@ -534,8 +509,9 @@ public final class Main extends JavaPlugin implements Listener {
 
     private void sendLanguageAndStyleChoices(final Player player) {
         final String currentLanguage = this.getConfig().getString("language", "en").toLowerCase(Locale.ROOT);
-        final String currentStyle = this.getConfig().getString("messages.style", "classic").toLowerCase(Locale.ROOT);
-        
+        final String rawStyle = this.getConfig().getString("messages.style", "classic");
+        final String currentStyle = (rawStyle == null ? "classic" : rawStyle).toLowerCase(Locale.ROOT);
+
         MessageUtil.send(player, "settings_change_language");
         
         final StringBuilder langBuilder = new StringBuilder("<#91f251>");
@@ -646,7 +622,7 @@ public final class Main extends JavaPlugin implements Listener {
         }
         
         final String activationMode = worldConfig.getString("activation_mode", "double_jump");
-        final List<String> validModes = Arrays.asList("double_jump", "auto", "sneak_jump", "f_key");
+        final List<String> validModes = List.of("double_jump", "auto", "sneak_jump", "f_key");
         if (!validModes.contains(activationMode)) {
             this.getLogger().warning("[" + worldName + "] Invalid activation mode '" + activationMode + "', using default: double_jump");
             worldConfig.set("activation_mode", "double_jump");
