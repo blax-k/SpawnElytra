@@ -2,12 +2,14 @@ package com.blaxk.spawnelytra.command;
 
 import com.blaxk.spawnelytra.Main;
 import com.blaxk.spawnelytra.listener.SpawnElytra;
+import com.blaxk.spawnelytra.util.DisplayNames;
 import com.blaxk.spawnelytra.util.MessageUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -25,38 +27,6 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
 
     public CommandHandler(final Main plugin) {
         this.plugin = plugin;
-    }
-
-    private String prettyActivation(final String mode) {
-        if (mode == null) return "-";
-        return switch (mode.toLowerCase(Locale.ROOT)) {
-            case "double_jump" -> "Double Jump";
-            case "auto" -> "Auto";
-            case "sneak_jump" -> "Sneak Jump";
-            case "f_key" -> "F Key";
-            default -> mode;
-        };
-    }
-
-    private String prettySpawnMode(final String mode) {
-        if (mode == null) return "-";
-        return switch (mode.toLowerCase(Locale.ROOT)) {
-            case "auto" -> "Auto";
-            case "advanced" -> "Advanced";
-            default -> mode;
-        };
-    }
-
-    private String prettyLanguage(final String lang) {
-        if (lang == null) return "-";
-        return switch (lang.toLowerCase(Locale.ROOT)) {
-            case "de" -> "Deutsch";
-            case "en" -> "English";
-            case "es" -> "Español";
-            case "fr" -> "Français";
-            case "pl" -> "Polski";
-            default -> lang;
-        };
     }
 
     @Override
@@ -281,41 +251,50 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
         final String version = this.plugin.getDescription().getVersion();
         final String author = this.plugin.getDescription().getAuthors().isEmpty()
                 ? "Unknown"
-                : this.plugin.getDescription().getAuthors().get(0);
-        final String website = plugin.getDescription().getWebsite() != null
+                : this.plugin.getDescription().getAuthors().getFirst();
+        final String website = this.plugin.getDescription().getWebsite() != null
                 ? this.plugin.getDescription().getWebsite()
                 : "-";
-        final List<String> worlds = this.plugin.getConfig().getStringList("worlds");
-        final String worldsDisplay = (worlds == null || worlds.isEmpty())
-                ? "-"
-                : String.join(", ", worlds);
-        final int radius = this.plugin.getConfig().getInt("radius");
-        final int strength = this.plugin.getConfig().getInt("strength");
-        final boolean boostEnabled = this.plugin.getConfig().getBoolean("boost_enabled", true);
-        final String activationMode = this.plugin.getConfig().getString("activation_mode", "double_jump");
-        final String spawnMode = this.plugin.getConfig().getString("spawn.mode", "auto");
         final String language = this.plugin.getConfig().getString("language", "en");
-        final double launchStrength = this.plugin.getConfig().getDouble("f_key_launch_strength", 1.5);
 
         MessageUtil.send(sender, "info_version", Placeholder.unparsed("value", version));
-        
-        final Component authorMsg = this.getAuthorMessage(language.toLowerCase(Locale.ROOT), author);
-        MessageUtil.sendRaw(sender, authorMsg);
+        MessageUtil.sendRaw(sender, this.getAuthorMessage(language.toLowerCase(Locale.ROOT), author));
         MessageUtil.send(sender, "info_website", Placeholder.unparsed("value", website));
-        MessageUtil.send(sender, "info_world", Placeholder.unparsed("value", worldsDisplay));
-        MessageUtil.send(sender, "info_radius", Placeholder.unparsed("value", String.valueOf(radius)));
-        MessageUtil.send(sender, "info_strength", Placeholder.unparsed("value", String.valueOf(strength)));
-        MessageUtil.send(sender, "info_boost_enabled", Placeholder.unparsed("value", String.valueOf(boostEnabled)));
-        MessageUtil.send(sender, "info_activation_mode", Placeholder.unparsed("value", this.prettyActivation(activationMode)));
+        MessageUtil.send(sender, "info_language", Placeholder.unparsed("value", DisplayNames.language(language)));
 
-        if ("f_key".equalsIgnoreCase(activationMode)) {
-            MessageUtil.send(sender, "info_offhand_key");
-            MessageUtil.send(sender, "info_f_key_launch_strength",
-                    Placeholder.unparsed("value", String.valueOf(launchStrength)));
+        final ConfigurationSection worldsSection = this.plugin.getConfig().getConfigurationSection("worlds");
+        if (worldsSection == null || worldsSection.getKeys(false).isEmpty()) {
+            MessageUtil.send(sender, "info_world", Placeholder.unparsed("value", "-"));
+            return;
         }
 
-        MessageUtil.send(sender, "info_spawn_mode", Placeholder.unparsed("value", this.prettySpawnMode(spawnMode)));
-        MessageUtil.send(sender, "info_language", Placeholder.unparsed("value", this.prettyLanguage(language)));
+        for (final String worldName : worldsSection.getKeys(false)) {
+            final ConfigurationSection world = worldsSection.getConfigurationSection(worldName);
+            if (world == null) {
+                continue;
+            }
+
+            final int radius = world.getInt("radius", 100);
+            final int strength = world.getInt("boost.strength", 2);
+            final boolean boostEnabled = world.getBoolean("boost.enabled", true);
+            final String activationMode = world.getString("activation_mode", "double_jump");
+            final String spawnMode = world.getString("spawn_area.mode", "auto");
+            final double launchStrength = world.getDouble("f_key.launch_strength", 1.5);
+
+            MessageUtil.send(sender, "info_world", Placeholder.unparsed("value", worldName));
+            MessageUtil.send(sender, "info_radius", Placeholder.unparsed("value", String.valueOf(radius)));
+            MessageUtil.send(sender, "info_strength", Placeholder.unparsed("value", String.valueOf(strength)));
+            MessageUtil.send(sender, "info_boost_enabled", Placeholder.unparsed("value", String.valueOf(boostEnabled)));
+            MessageUtil.send(sender, "info_activation_mode", Placeholder.unparsed("value", DisplayNames.activationMode(activationMode)));
+
+            if ("f_key".equalsIgnoreCase(activationMode)) {
+                MessageUtil.send(sender, "info_offhand_key");
+                MessageUtil.send(sender, "info_f_key_launch_strength",
+                        Placeholder.unparsed("value", String.valueOf(launchStrength)));
+            }
+
+            MessageUtil.send(sender, "info_spawn_mode", Placeholder.unparsed("value", DisplayNames.spawnMode(spawnMode)));
+        }
     }
 
     @Override
@@ -362,96 +341,20 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
     }
     
     private Component getAuthorMessage(final String language, final String author) {
-        final String style = this.plugin.getConfig().getString("messages.style", "classic").toLowerCase(Locale.ROOT);
-        
+        final String rawStyle = this.plugin.getConfig().getString("messages.style", "classic");
+        final String style = (rawStyle == null ? "classic" : rawStyle).toLowerCase(Locale.ROOT);
+
         String text = switch (language) {
-            case "de" -> "<#fdba5e>Autor: <#91f251>" + author + "</#91f251>";
-            case "es" -> "<#fdba5e>Autor: <#91f251>" + author + "</#91f251>";
+            case "de", "es", "pl" -> "<#fdba5e>Autor: <#91f251>" + author + "</#91f251>";
             case "fr" -> "<#fdba5e>Auteur: <#91f251>" + author + "</#91f251>";
-            case "pl" -> "<#fdba5e>Autor: <#91f251>" + author + "</#91f251>";
             default -> "<#fdba5e>Author: <#91f251>" + author + "</#91f251>";
         };
         
         if ("small_caps".equals(style) && ("en".equals(language) || "de".equals(language))) {
-            text = this.applySmallCaps(text);
+            text = MessageUtil.toSmallCapsPreservingTags(text);
         }
-        
+
         return MiniMessage.miniMessage().deserialize(text);
-    }
-    
-    private String applySmallCaps(final String input) {
-        if (input == null || input.isEmpty()) {
-            return input;
-        }
-        final StringBuilder out = new StringBuilder(input.length());
-        boolean inTag = false;
-        int depth = 0;
-        for (int i = 0; i < input.length(); i++) {
-            final char ch = input.charAt(i);
-            if ('<' == ch) {
-                inTag = true;
-                depth++;
-                out.append('<');
-                continue;
-            }
-            if ('>' == ch && inTag) {
-                out.append('>');
-                depth--;
-                if (depth <= 0) {
-                    inTag = false;
-                    depth = 0;
-                }
-                continue;
-            }
-            if (inTag) {
-                out.append(ch);
-            } else {
-                final char lower = Character.toLowerCase(ch);
-                final String mapped = this.getSmallCapsMapping(lower);
-                if (mapped != null) {
-                    out.append(mapped);
-                } else {
-                    out.append(ch);
-                }
-            }
-        }
-        return out.toString();
-    }
-    
-    private String getSmallCapsMapping(final char ch) {
-        return switch (ch) {
-            case 'a' -> "ᴀ";
-            case 'b' -> "ʙ";
-            case 'c' -> "ᴄ";
-            case 'd' -> "ᴅ";
-            case 'e' -> "ᴇ";
-            case 'f' -> "ꜰ";
-            case 'g' -> "ɢ";
-            case 'h' -> "ʜ";
-            case 'i' -> "ɪ";
-            case 'j' -> "ᴊ";
-            case 'k' -> "ᴋ";
-            case 'l' -> "ʟ";
-            case 'm' -> "ᴍ";
-            case 'n' -> "ɴ";
-            case 'o' -> "ᴏ";
-            case 'p' -> "ᴘ";
-            case 'q' -> "ƫ";
-            case 'r' -> "ʀ";
-            case 's' -> "ꜱ";
-            case 't' -> "ᴛ";
-            case 'u' -> "ᴜ";
-            case 'v' -> "ᴠ";
-            case 'w' -> "ᴡ";
-            case 'x' -> "x";
-            case 'y' -> "ʏ";
-            case 'z' -> "ᴢ";
-            case 'ä' -> "ä";
-            case 'ö' -> "ö";
-            case 'ü' -> "ü";
-            case 'ß' -> "ꜱꜱ";
-            default -> null;
-        };
     }
 }
 

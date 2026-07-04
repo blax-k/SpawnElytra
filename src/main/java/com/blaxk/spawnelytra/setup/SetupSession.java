@@ -10,6 +10,11 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 public class SetupSession {
+    private static final Color GOLD = Color.fromRGB(255, 215, 0);
+    private static final Particle.DustOptions GOLD_MARKER = new Particle.DustOptions(GOLD, 1.8f);
+    private static final Particle.DustOptions GOLD_EDGE = new Particle.DustOptions(GOLD, 1.2f);
+    private static final Particle.DustOptions GOLD_FILL = new Particle.DustOptions(GOLD, 1.0f);
+
     private final Main plugin;
     private final Player player;
 
@@ -32,10 +37,8 @@ public class SetupSession {
     }
 
     public void begin() {
-        final boolean originalShowBoostActivated = this.plugin.getConfig().getBoolean("messages.show_boost_activated", true);
-        final boolean originalShowPressToBoost = this.plugin.getConfig().getBoolean("messages.show_press_to_boost", true);
-        this.showBoostActivated = originalShowBoostActivated;
-        this.showPressToBoost = originalShowPressToBoost;
+        this.showBoostActivated = this.plugin.getConfig().getBoolean("messages.show_boost_activated", true);
+        this.showPressToBoost = this.plugin.getConfig().getBoolean("messages.show_press_to_boost", true);
 
         MessageUtil.send(this.player, "setup_started");
         
@@ -91,8 +94,7 @@ public class SetupSession {
     }
 
     private void spawnMarker(final Location loc) {
-        this.player.spawnParticle(Particle.DUST, loc, 15, 0.15, 0.15, 0.15, 0.0,
-                new Particle.DustOptions(Color.fromRGB(255, 215, 0), 1.8f));
+        this.player.spawnParticle(Particle.DUST, loc, 15, 0.15, 0.15, 0.15, 0.0, GOLD_MARKER);
     }
 
     private void startRectangleAnimation() {
@@ -152,7 +154,7 @@ public class SetupSession {
     private void drawBoxEdges(final double progress, final double minX, final double minY, final double minZ, final double maxX, final double maxY, final double maxZ) {
         final double y1 = minY;
         final double y2 = minY + (maxY - minY) * progress;
-        final Particle.DustOptions edgeDust = new Particle.DustOptions(org.bukkit.Color.fromRGB(255, 215, 0), 1.2f);
+        final Particle.DustOptions edgeDust = GOLD_EDGE;
         for (double y = y1; y <= y2; y += 0.5) {
             this.player.spawnParticle(Particle.DUST, new Location(this.player.getWorld(), minX, y, minZ), 1, 0, 0, 0, 0, edgeDust);
             this.player.spawnParticle(Particle.DUST, new Location(this.player.getWorld(), minX, y, maxZ), 1, 0, 0, 0, 0, edgeDust);
@@ -164,7 +166,7 @@ public class SetupSession {
     }
 
     private void drawRectangleOnY(final double minX, final double minZ, final double maxX, final double maxZ, final double y, final double progress) {
-        final Particle.DustOptions gold = new Particle.DustOptions(org.bukkit.Color.fromRGB(255, 215, 0), 1.2f);
+        final Particle.DustOptions gold = GOLD_EDGE;
         final double xProgress = minX + (maxX - minX) * progress;
         final double zProgress = minZ + (maxZ - minZ) * progress;
         for (double x = minX; x <= xProgress; x += 0.5) {
@@ -178,7 +180,7 @@ public class SetupSession {
     }
 
     private void drawFilledPlane(final double minX, final double minZ, final double maxX, final double maxZ, final double y, double spacing) {
-        final Particle.DustOptions gold = new Particle.DustOptions(org.bukkit.Color.fromRGB(255, 215, 0), 1.0f);
+        final Particle.DustOptions gold = GOLD_FILL;
         if (spacing <= 0) spacing = 1.0;
         for (double x = minX; x <= maxX; x += spacing) {
             for (double z = minZ; z <= maxZ; z += spacing) {

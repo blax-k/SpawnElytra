@@ -68,7 +68,6 @@ public class SpawnElytra implements Listener {
     private final long boostCooldownMs;
     private final World world;
     private final List<Player> flying = new ArrayList<>();
-    private final List<Player> boosted = new ArrayList<>();
     private final Location spawnLocation;
     private final Sound boostSound;
     private final boolean disableInCreative;
@@ -149,7 +148,7 @@ public class SpawnElytra implements Listener {
 
         if (this.world == null) {
             plugin.getLogger().severe("Invalid world: " + worldName + ". Available worlds: " +
-                Bukkit.getWorlds().stream().map(w -> w.getName()).reduce((a, b) -> a + ", " + b).orElse("none"));
+                Bukkit.getWorlds().stream().map(World::getName).reduce((a, b) -> a + ", " + b).orElse("none"));
             spawnLocation = null;
             minX = minY = minZ = 0;
             maxX = maxY = maxZ = 0;
@@ -302,6 +301,17 @@ public class SpawnElytra implements Listener {
         return this.world != null && this.spawnLocation != null;
     }
 
+    public boolean isFlying(final Player player) {
+        return flying.contains(player);
+    }
+
+    public int getBoostsRemaining(final Player player) {
+        if (!this.boostEnabled) {
+            return 0;
+        }
+        return Math.max(0, this.maxBoosts - this.boostUseCount.getOrDefault(player.getUniqueId(), 0));
+    }
+
     @EventHandler
     public void onPlayerInteract(final PlayerInteractEvent event) {
         if (!this.isValid()) {
@@ -425,10 +435,6 @@ public class SpawnElytra implements Listener {
                 player.setSaturation(newLevel);
             }
         }
-    }
-
-    public void visualizeArea(final Player player) {
-        this.visualizeArea(player, 30);
     }
 
     public void visualizeArea(final Player player, final int seconds) {
@@ -722,7 +728,6 @@ public class SpawnElytra implements Listener {
         this.revokeSpawnElytraAllowFlight(player);
         player.setGliding(false);
         flying.remove(player);
-        boosted.remove(player);
         final UUID uuid = player.getUniqueId();
         this.boostCooldown.remove(uuid);
         this.boostUseCount.remove(uuid);
@@ -878,7 +883,6 @@ public class SpawnElytra implements Listener {
         if (flying.contains(player)) {
             if (player.isOnGround() || player.getLocation().getBlock().getRelative(BlockFace.DOWN).isLiquid()) {
                 this.disableElytraFlight(player);
-                flying.remove(player);
             } else {
                 player.setFallDistance(0);
                 if (player.isGliding() && this.hungerEnabled) {
@@ -968,9 +972,6 @@ public class SpawnElytra implements Listener {
         if (this.boostCooldownMs > 0) {
             this.boostCooldown.put(uuid, System.currentTimeMillis());
         }
-        if (newCount >= this.maxBoosts) {
-            boosted.add(player);
-        }
 
         final Vector velocity;
         if ("upward".equalsIgnoreCase(boostDirection)) {
@@ -1057,7 +1058,7 @@ public class SpawnElytra implements Listener {
         }
     }
 
-    private boolean isInSpawnArea(final Player player) {
+    public boolean isInSpawnArea(final Player player) {
         if (!player.getWorld().equals(world) || this.spawnLocation == null) {
             return false;
         }

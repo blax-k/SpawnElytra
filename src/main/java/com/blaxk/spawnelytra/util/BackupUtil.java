@@ -62,23 +62,24 @@ public enum BackupUtil {
             }
 
             final Path base = sourceDir.toPath();
-            
-            Files.walk(base)
-                    .filter(Files::isRegularFile)
-                    .forEach(p -> {
-                        try {
-                            final String rel = base.relativize(p).toString().replace('\\', '/');
-                            final String combined = (relativeBase == null || relativeBase.isEmpty()) ? rel : (relativeBase.replace('\\', '/') + "/" + rel);
-                            final File target = new File(tsDir, combined.replace('/', File.separatorChar));
-                            final File parent = target.getParentFile();
-                            if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                                plugin.getLogger().warning("Failed to create backup subdirectory: " + parent.getAbsolutePath());
+
+            try (final var paths = Files.walk(base)) {
+                paths.filter(Files::isRegularFile)
+                        .forEach(p -> {
+                            try {
+                                final String rel = base.relativize(p).toString().replace('\\', '/');
+                                final String combined = (relativeBase == null || relativeBase.isEmpty()) ? rel : (relativeBase.replace('\\', '/') + "/" + rel);
+                                final File target = new File(tsDir, combined.replace('/', File.separatorChar));
+                                final File parent = target.getParentFile();
+                                if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                                    plugin.getLogger().warning("Failed to create backup subdirectory: " + parent.getAbsolutePath());
+                                }
+                                Files.copy(p, target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            } catch (final IOException e) {
+                                plugin.getLogger().warning("Failed to back up file '" + p + "': " + e.getMessage());
                             }
-                            Files.copy(p, target.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        } catch (final IOException e) {
-                            plugin.getLogger().warning("Failed to back up file '" + p + "': " + e.getMessage());
-                        }
-                    });
+                        });
+            }
 
             plugin.getLogger().info("Created directory backup at: " + tsDir.getAbsolutePath());
             return tsDir;

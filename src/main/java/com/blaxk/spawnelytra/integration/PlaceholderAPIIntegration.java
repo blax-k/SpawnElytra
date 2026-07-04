@@ -2,6 +2,7 @@ package com.blaxk.spawnelytra.integration;
 
 import com.blaxk.spawnelytra.Main;
 import com.blaxk.spawnelytra.data.PlayerDataManager;
+import com.blaxk.spawnelytra.listener.SpawnElytra;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -57,6 +58,21 @@ public class PlaceholderAPIIntegration extends PlaceholderExpansion {
         if ("total_count".equals(identifier)) {
             final PlayerDataManager.PlayerData data = this.playerDataManager.getPlayerData(player.getUniqueId());
             return String.valueOf(data.getFlyCount() + data.getBoostCount());
+        }
+
+        if ("flying".equals(identifier)) {
+            final SpawnElytra instance = this.plugin.getSpawnElytraInstance(player.getWorld().getName());
+            return String.valueOf(instance != null && instance.isFlying(player));
+        }
+
+        if ("in_area".equals(identifier)) {
+            final SpawnElytra instance = this.plugin.getSpawnElytraInstance(player.getWorld().getName());
+            return String.valueOf(instance != null && instance.isInSpawnArea(player));
+        }
+
+        if ("boosts_remaining".equals(identifier)) {
+            final SpawnElytra instance = this.plugin.getSpawnElytraInstance(player.getWorld().getName());
+            return String.valueOf(instance != null ? instance.getBoostsRemaining(player) : 0);
         }
 
         return null;
