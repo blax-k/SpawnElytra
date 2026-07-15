@@ -44,7 +44,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 import org.bukkit.event.player.PlayerMoveEvent;
 import com.blaxk.spawnelytra.Main;
+import com.blaxk.spawnelytra.bedrock.TempElytraManager;
 import com.blaxk.spawnelytra.data.PlayerDataManager;
+import com.blaxk.spawnelytra.integration.BedrockSupport;
 import com.blaxk.spawnelytra.util.SchedulerUtil;
 import com.blaxk.spawnelytra.util.MessageUtil;
 
@@ -101,7 +103,10 @@ public class SpawnElytra implements Listener {
     private final Map<UUID, Long> hungerLastConsumption = new HashMap<>();
     private final Map<UUID, Location> hungerLastLocation = new HashMap<>();
 
+    private static final long FLIGHT_END_GRACE_MS = 1000L;
+
     private final Map<UUID, Long> sneakJumpCooldown = new HashMap<>();
+    private final Map<UUID, Long> flightEndGrace = new HashMap<>();
     private final Map<UUID, Long> boostCooldown = new HashMap<>();
     private final Map<UUID, Integer> boostUseCount = new HashMap<>();
     private final Map<UUID, Boolean> sneakPressed = new HashMap<>();
@@ -311,6 +316,12 @@ public class SpawnElytra implements Listener {
         return flying.contains(player);
     }
 
+    public void resumeBedrockFlight(final Player player) {
+        if (!flying.contains(player)) {
+            flying.add(player);
+        }
+    }
+
     public int getBoostsRemaining(final Player player) {
         if (!this.boostEnabled) {
             return 0;
@@ -336,7 +347,8 @@ public class SpawnElytra implements Listener {
                 Material.FIREWORK_ROCKET == item.getType()) {
 
             final ItemStack chestplate = player.getInventory().getChestplate();
-            if (chestplate == null || Material.ELYTRA != chestplate.getType()) {
+            if (chestplate == null || Material.ELYTRA != chestplate.getType()
+                    || this.plugin.getTempElytraManager().isTempElytra(chestplate)) {
                 event.setCancelled(true);
             }
         }
@@ -684,6 +696,32 @@ public class SpawnElytra implements Listener {
         }
     }
 
+    private void updateBedrockPriming(final Player player) {
+        if (flying.contains(player) || player.isGliding()) {
+            return;
+        }
+
+        final boolean wantPrimed = this.isInSpawnArea(player)
+                && player.hasPermission("spawnelytra.use")
+                && this.isElytraAllowedInMode(player)
+                && !this.isExternalFlyActive(player)
+                && this.hasActivationHungerAvailable(player);
+
+        final TempElytraManager manager = this.plugin.getTempElytraManager();
+        if (wantPrimed) {
+            manager.ensureEquipped(player);
+        } else {
+            manager.ensureRestored(player);
+        }
+    }
+
+    private boolean hasActivationHungerAvailable(final Player player) {
+        if (!this.hungerEnabled || HungerMode.ACTIVATION != hungerMode) {
+            return true;
+        }
+        return this.shouldConsumeHunger(player);
+    }
+
     private boolean isFlyToggleCommand(final String message) {
         if (message == null || message.isBlank()) {
             return false;
@@ -699,29 +737,41 @@ public class SpawnElytra implements Listener {
             return;
         }
 
-        if (this.hungerEnabled && HungerMode.ACTIVATION == hungerMode) {
-            if (!this.shouldConsumeHunger(player)) {
-                MessageUtil.sendActionBar(player, "not_enough_hunger");
-                return;
-            }
-            if (hungerActivationCost > 0) {
-                this.consumeHunger(player, this.hungerActivationCost);
-            }
+        if (!this.chargeActivationHunger(player)) {
+            return;
         }
 
         player.setGliding(true);
         this.revokeSpawnElytraAllowFlight(player);
 
+        this.startFlightBookkeeping(player);
+    }
+
+    private boolean chargeActivationHunger(final Player player) {
+        if (this.hungerEnabled && HungerMode.ACTIVATION == hungerMode) {
+            if (!this.shouldConsumeHunger(player)) {
+                MessageUtil.sendActionBar(player, "not_enough_hunger");
+                return false;
+            }
+            if (hungerActivationCost > 0) {
+                this.consumeHunger(player, this.hungerActivationCost);
+            }
+        }
+        return true;
+    }
+
+    private void startFlightBookkeeping(final Player player) {
         if (playerDataManager != null) {
             this.playerDataManager.incrementFlyCount(player);
         }
 
         if (this.plugin.getConfig().getBoolean("messages.show_press_to_boost", true) && this.boostEnabled) {
+            final boolean bedrock = BedrockSupport.isManaged(player);
             if (this.maxBoosts > 1) {
-                MessageUtil.sendActionBar(player, "press_to_boost_remaining",
+                MessageUtil.sendActionBar(player, bedrock ? "press_to_boost_remaining_bedrock" : "press_to_boost_remaining",
                         Placeholder.unparsed("remaining", String.valueOf(this.maxBoosts)));
             } else {
-                MessageUtil.sendActionBar(player, "press_to_boost");
+                MessageUtil.sendActionBar(player, bedrock ? "press_to_boost_bedrock" : "press_to_boost");
             }
         }
 
@@ -733,8 +783,10 @@ public class SpawnElytra implements Listener {
     private void disableElytraFlight(final Player player) {
         this.revokeSpawnElytraAllowFlight(player);
         player.setGliding(false);
+        player.setFallDistance(0);
         flying.remove(player);
         final UUID uuid = player.getUniqueId();
+        this.flightEndGrace.put(uuid, System.currentTimeMillis());
         this.boostCooldown.remove(uuid);
         this.boostUseCount.remove(uuid);
         this.resetHungerTracking(player);
@@ -755,6 +807,10 @@ public class SpawnElytra implements Listener {
         }
 
         final Player player = event.getPlayer();
+
+        if (BedrockSupport.isManaged(player)) {
+            return;
+        }
 
         if (!player.hasPermission("spawnelytra.use")) {
             return;
@@ -791,6 +847,14 @@ public class SpawnElytra implements Listener {
         
         final Player player = event.getPlayer();
         final UUID playerId = player.getUniqueId();
+
+        if (event.isSneaking()
+                && BedrockSupport.isManaged(player)
+                && flying.contains(player)
+                && player.isGliding()) {
+            this.tryBoost(player);
+            return;
+        }
 
         if (!player.hasPermission("spawnelytra.use")) {
             return;
@@ -866,7 +930,9 @@ public class SpawnElytra implements Listener {
         
         final Player player = event.getPlayer();
 
-        if (this.isElytraAllowedInMode(player)) {
+        if (BedrockSupport.isManaged(player) && player.getWorld().equals(this.world)) {
+            this.updateBedrockPriming(player);
+        } else if (this.isElytraAllowedInMode(player)) {
             final boolean inArea = isInSpawnArea(player);
 
             if ("double_jump".equalsIgnoreCase(activationMode)) {
@@ -905,10 +971,32 @@ public class SpawnElytra implements Listener {
 
     @EventHandler
     public void onEntityDamage(final EntityDamageEvent event) {
-        if (EntityType.PLAYER == event.getEntityType()) {
-            final Player player = (Player) event.getEntity();
-            if (flying.contains(player) && (DamageCause.FALL == event.getCause() || DamageCause.FLY_INTO_WALL == event.getCause())) {
+        if (EntityType.PLAYER != event.getEntityType()) {
+            return;
+        }
+
+        if (DamageCause.FALL != event.getCause() && DamageCause.FLY_INTO_WALL != event.getCause()) {
+            return;
+        }
+
+        final Player player = (Player) event.getEntity();
+
+        if (flying.contains(player)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        if (this.plugin.getTempElytraManager().isTempElytra(player.getInventory().getChestplate())) {
+            event.setCancelled(true);
+            return;
+        }
+
+        final Long flightEnd = this.flightEndGrace.get(player.getUniqueId());
+        if (flightEnd != null) {
+            if (System.currentTimeMillis() - flightEnd <= FLIGHT_END_GRACE_MS) {
                 event.setCancelled(true);
+            } else {
+                this.flightEndGrace.remove(player.getUniqueId());
             }
         }
     }
@@ -921,7 +1009,7 @@ public class SpawnElytra implements Listener {
         
         final Player player = event.getPlayer();
 
-        if ("f_key".equalsIgnoreCase(activationMode)) {
+        if ("f_key".equalsIgnoreCase(activationMode) && !BedrockSupport.isManaged(player)) {
             if (!player.hasPermission("spawnelytra.use")) {
                 return;
             }
@@ -944,34 +1032,38 @@ public class SpawnElytra implements Listener {
             }
         }
 
+        if (this.tryBoost(player)) {
+            event.setCancelled(true);
+        }
+    }
+
+    private boolean tryBoost(final Player player) {
         if (!player.hasPermission("spawnelytra.useboost")) {
-            return;
+            return false;
         }
 
         if (!this.boostEnabled) {
-            return;
+            return false;
         }
 
         if (!flying.contains(player) || !player.isGliding()) {
-            return;
+            return false;
         }
 
         final UUID uuid = player.getUniqueId();
         final int usedBoosts = this.boostUseCount.getOrDefault(uuid, 0);
 
         if (usedBoosts >= this.maxBoosts) {
-            return;
+            return false;
         }
 
         if (this.boostCooldownMs > 0) {
             final long now = System.currentTimeMillis();
             final Long lastBoost = this.boostCooldown.get(uuid);
             if (lastBoost != null && (now - lastBoost) < this.boostCooldownMs) {
-                return;
+                return false;
             }
         }
-
-        event.setCancelled(true);
 
         final int newCount = usedBoosts + 1;
         this.boostUseCount.put(uuid, newCount);
@@ -1008,17 +1100,20 @@ public class SpawnElytra implements Listener {
         }
 
         if (remaining > 0 && showPressToBoost && this.maxBoosts > 1) {
+            final boolean bedrock = BedrockSupport.isManaged(player);
             final long delayTicks = this.boostCooldownMs > 0 ? Math.max(20L, this.boostCooldownMs / 50) : 30L;
             SchedulerUtil.runAtEntityLater(this.plugin, player, delayTicks, () -> {
                 if (flying.contains(player) && player.isGliding()) {
                     final int currentRemaining = this.maxBoosts - this.boostUseCount.getOrDefault(uuid, 0);
                     if (currentRemaining > 0) {
-                        MessageUtil.sendActionBar(player, "press_to_boost_remaining",
+                        MessageUtil.sendActionBar(player, bedrock ? "press_to_boost_remaining_bedrock" : "press_to_boost_remaining",
                                 Placeholder.unparsed("remaining", String.valueOf(currentRemaining)));
                     }
                 }
             });
         }
+
+        return true;
     }
 
     @EventHandler
@@ -1033,8 +1128,19 @@ public class SpawnElytra implements Listener {
 
         final Player player = (Player) event.getEntity();
 
+        if (event.isGliding()
+                && !flying.contains(player)
+                && BedrockSupport.isManaged(player)
+                && player.getWorld().equals(this.world)) {
+            this.handleBedrockGlideStart(player, event);
+            return;
+        }
+
         if (flying.contains(player)) {
             if (!event.isGliding()) {
+                if (BedrockSupport.isManaged(player)) {
+                    return;
+                }
 
                 event.setCancelled(true);
             } else {
@@ -1042,6 +1148,27 @@ public class SpawnElytra implements Listener {
                 this.revokeSpawnElytraAllowFlight(player);
             }
         }
+    }
+
+    private void handleBedrockGlideStart(final Player player, final EntityToggleGlideEvent event) {
+        final TempElytraManager manager = this.plugin.getTempElytraManager();
+        if (!manager.hasTempElytraEquipped(player)) {
+            return;
+        }
+
+        final boolean allowed = player.hasPermission("spawnelytra.use")
+                && this.isElytraAllowedInMode(player)
+                && this.isInSpawnArea(player)
+                && !this.isExternalFlyActive(player)
+                && this.chargeActivationHunger(player);
+
+        if (!allowed) {
+            event.setCancelled(true);
+            manager.ensureRestored(player);
+            return;
+        }
+
+        this.startFlightBookkeeping(player);
     }
 
     @EventHandler
@@ -1099,6 +1226,7 @@ public class SpawnElytra implements Listener {
         final UUID uuid = player.getUniqueId();
         this.sneakJumpCooldown.remove(uuid);
         this.sneakPressed.remove(uuid);
+        this.flightEndGrace.remove(uuid);
     }
 
     public void stopVisualization(final Player player) {

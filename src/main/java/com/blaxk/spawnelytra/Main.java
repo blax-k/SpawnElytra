@@ -45,11 +45,13 @@ import com.blaxk.spawnelytra.util.SchedulerUtil;
 import com.blaxk.spawnelytra.util.MessageUtil;
 import com.blaxk.spawnelytra.util.UpdateUtil;
 import com.blaxk.spawnelytra.util.DisplayNames;
+import com.blaxk.spawnelytra.bedrock.TempElytraManager;
 import com.blaxk.spawnelytra.command.CommandHandler;
 import com.blaxk.spawnelytra.config.ConfigUpdater;
 import com.blaxk.spawnelytra.config.LanguageUpdater;
 import com.blaxk.spawnelytra.listener.SpawnElytra;
 import com.blaxk.spawnelytra.data.PlayerDataManager;
+import com.blaxk.spawnelytra.integration.BedrockSupport;
 import com.blaxk.spawnelytra.integration.PlaceholderAPIIntegration;
 import org.jetbrains.annotations.NotNull;
 
@@ -60,6 +62,7 @@ public final class Main extends JavaPlugin implements Listener {
     private static final String MIGRATION_NOTICE_FILENAME = "MIGRATED_TO_SPAWN_ELYTRA.txt";
 
     private PlayerDataManager playerDataManager;
+    private TempElytraManager tempElytraManager;
     private final Map<String, SpawnElytra> worldInstances = new HashMap<>();
     private final Map<String, String> lastMenuSent = new HashMap<>();
     private int remainingFirstInstallShows = 5;
@@ -125,6 +128,16 @@ public final class Main extends JavaPlugin implements Listener {
     private void registerListenersAndCommands() {
         Bukkit.getPluginManager().registerEvents(this, this);
 
+        BedrockSupport.initialize(this);
+        this.tempElytraManager = new TempElytraManager(this);
+        Bukkit.getPluginManager().registerEvents(this.tempElytraManager, this);
+        try {
+            Class.forName("io.papermc.paper.event.player.PlayerTrackEntityEvent");
+            Bukkit.getPluginManager().registerEvents(
+                    new com.blaxk.spawnelytra.bedrock.TempElytraTrackListener(this, this.tempElytraManager), this);
+        } catch (final ClassNotFoundException spigot) {
+        }
+
         this.setupManager = new com.blaxk.spawnelytra.setup.SetupManager(this);
         Bukkit.getPluginManager().registerEvents(this.setupManager, this);
 
@@ -144,6 +157,10 @@ public final class Main extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        if (tempElytraManager != null) {
+            this.tempElytraManager.restoreAll();
+        }
+
         if (playerDataManager != null) {
             this.playerDataManager.saveAllPlayerData();
         }
@@ -192,6 +209,7 @@ public final class Main extends JavaPlugin implements Listener {
                 instance.cleanupPlayer(player);
             }
         }
+        BedrockSupport.forget(player.getUniqueId());
     }
 
     private void sendUpdateNotification(final Player player) {
@@ -204,10 +222,26 @@ public final class Main extends JavaPlugin implements Listener {
         }
         
         final String language = this.getConfig().getString("language", "en").toLowerCase(Locale.ROOT);
-        
+
         MessageUtil.sendRaw(recipient, this.getNewVersionMessage(language));
         MessageUtil.sendRaw(recipient, this.getUpdateToVersionMessage(language, this.latestVersion));
-        MessageUtil.sendRaw(recipient, this.getDownloadButtonsMessage(language, this.latestVersion));
+        if (recipient instanceof final Player p && BedrockSupport.isBedrockPlayer(p)) {
+            MessageUtil.sendRaw(recipient, this.getDownloadCommandsMessage(language));
+        } else {
+            MessageUtil.sendRaw(recipient, this.getDownloadButtonsMessage(language, this.latestVersion));
+        }
+    }
+
+    private Component getDownloadCommandsMessage(final String language) {
+        final String modrinthUrl = this.buildUpdateLink();
+        final String text = switch (language) {
+            case "de" -> "<#91f251>Auto-Update: <#ffd166>/spawnelytra update</#ffd166> <#aaa8a8>• Download: <#5db3ff>" + modrinthUrl;
+            case "es" -> "<#91f251>Actualización automática: <#ffd166>/spawnelytra update</#ffd166> <#aaa8a8>• Descarga: <#5db3ff>" + modrinthUrl;
+            case "fr" -> "<#91f251>Mise à jour auto : <#ffd166>/spawnelytra update</#ffd166> <#aaa8a8>• Téléchargement : <#5db3ff>" + modrinthUrl;
+            case "pl" -> "<#91f251>Automatyczna aktualizacja: <#ffd166>/spawnelytra update</#ffd166> <#aaa8a8>• Pobieranie: <#5db3ff>" + modrinthUrl;
+            default -> "<#91f251>Auto update: <#ffd166>/spawnelytra update</#ffd166> <#aaa8a8>• Download: <#5db3ff>" + modrinthUrl;
+        };
+        return MiniMessage.miniMessage().deserialize(text);
     }
 
     private String buildUpdateLink() {
@@ -439,6 +473,8 @@ public final class Main extends JavaPlugin implements Listener {
 
         this.remainingFirstInstallShows--;
 
+        final boolean bedrock = BedrockSupport.isBedrockPlayer(player);
+
         final Component header = MiniMessage.miniMessage().deserialize("<#ffcc33>Welcome to Spawn Elytra!");
         MessageUtil.sendRaw(player, header);
 
@@ -446,25 +482,41 @@ public final class Main extends JavaPlugin implements Listener {
 
         final Component languagePrompt = MiniMessage.miniMessage().deserialize("<#fdba5e>✎ Choose your preferred language below:");
         MessageUtil.sendRaw(player, languagePrompt);
-        
-        final Component languageButtons = MiniMessage.miniMessage().deserialize(
-                "   <#91f251>[<click:run_command:'/spawnelytra set language en'><hover:show_text:'<#91f251>Set language to English'>English</hover></click>] " +
-                        "[<click:run_command:'/spawnelytra set language de'><hover:show_text:'<#91f251>Set language to German'>Deutsch</hover></click>] " +
-                        "[<click:run_command:'/spawnelytra set language es'><hover:show_text:'<#91f251>Set language to Spanish'>Español</hover></click>] " +
-                        "[<click:run_command:'/spawnelytra set language fr'><hover:show_text:'<#91f251>Set language to French'>Français</hover></click>] " +
-                        "[<click:run_command:'/spawnelytra set language pl'><hover:show_text:'<#91f251>Set language to Polish'>Polski</hover></click>]"
-        );
+
+        final Component languageButtons;
+        if (bedrock) {
+            languageButtons = MiniMessage.miniMessage().deserialize(
+                    "   <#91f251>/spawnelytra set language <#ffd166>en<#aaa8a8> | <#ffd166>de<#aaa8a8> | <#ffd166>es<#aaa8a8> | <#ffd166>fr<#aaa8a8> | <#ffd166>pl");
+        } else {
+            languageButtons = MiniMessage.miniMessage().deserialize(
+                    "   <#91f251>[<click:run_command:'/spawnelytra set language en'><hover:show_text:'<#91f251>Set language to English'>English</hover></click>] " +
+                            "[<click:run_command:'/spawnelytra set language de'><hover:show_text:'<#91f251>Set language to German'>Deutsch</hover></click>] " +
+                            "[<click:run_command:'/spawnelytra set language es'><hover:show_text:'<#91f251>Set language to Spanish'>Español</hover></click>] " +
+                            "[<click:run_command:'/spawnelytra set language fr'><hover:show_text:'<#91f251>Set language to French'>Français</hover></click>] " +
+                            "[<click:run_command:'/spawnelytra set language pl'><hover:show_text:'<#91f251>Set language to Polish'>Polski</hover></click>]"
+            );
+        }
         MessageUtil.sendRaw(player, languageButtons);
-        
+
         final Component setupPrompt = MiniMessage.miniMessage().deserialize("<#fdba5e>⚐ Set up the spawn area where the Elytra spawn will work:");
         MessageUtil.sendRaw(player, setupPrompt);
-        
-        final Component setupButton = MiniMessage.miniMessage().deserialize(
-                "   <#91f251>[<click:run_command:'/spawnelytra setup'><hover:show_text:'<#91f251>Currently, the Elytra spawn works 100 blocks in every direction from the world spawn point.\nTo define a specific area, you can either use the Setup Help or configure it yourself in config.yml.'>Start Setup</hover></click>]");
+
+        final Component setupButton;
+        if (bedrock) {
+            setupButton = MiniMessage.miniMessage().deserialize("   <#91f251>/spawnelytra setup");
+        } else {
+            setupButton = MiniMessage.miniMessage().deserialize(
+                    "   <#91f251>[<click:run_command:'/spawnelytra setup'><hover:show_text:'<#91f251>Currently, the Elytra spawn works 100 blocks in every direction from the world spawn point.\nTo define a specific area, you can either use the Setup Help or configure it yourself in config.yml.'>Start Setup</hover></click>]");
+        }
         MessageUtil.sendRaw(player, setupButton);
-        
-        final Component dismiss = MiniMessage.miniMessage().deserialize(
-                "<#aaa8a8>[<click:run_command:'/spawnelytra dismiss'><hover:show_text:'<#aaa8a8>Hide this message forever'>Dismiss this message</hover></click>]");
+
+        final Component dismiss;
+        if (bedrock) {
+            dismiss = MiniMessage.miniMessage().deserialize("<#aaa8a8>Dismiss this message forever: /spawnelytra dismiss");
+        } else {
+            dismiss = MiniMessage.miniMessage().deserialize(
+                    "<#aaa8a8>[<click:run_command:'/spawnelytra dismiss'><hover:show_text:'<#aaa8a8>Hide this message forever'>Dismiss this message</hover></click>]");
+        }
         MessageUtil.sendRaw(player, dismiss);
 
         if (remainingFirstInstallShows == 0) {
@@ -517,6 +569,18 @@ public final class Main extends JavaPlugin implements Listener {
         final String currentLanguage = this.getConfig().getString("language", "en").toLowerCase(Locale.ROOT);
         final String rawStyle = this.getConfig().getString("messages.style", "classic");
         final String currentStyle = (rawStyle == null ? "classic" : rawStyle).toLowerCase(Locale.ROOT);
+
+        if (BedrockSupport.isBedrockPlayer(player)) {
+            MessageUtil.send(player, "settings_change_language");
+            MessageUtil.sendRaw(player, MiniMessage.miniMessage().deserialize(
+                    "<#91f251>/spawnelytra set language <#ffd166>en<#aaa8a8> | <#ffd166>de<#aaa8a8> | <#ffd166>es<#aaa8a8> | <#ffd166>fr<#aaa8a8> | <#ffd166>pl"
+                            + " <#aaa8a8>(current: <#91f251>" + currentLanguage + "<#aaa8a8>)"));
+            MessageUtil.send(player, "settings_change_style");
+            MessageUtil.sendRaw(player, MiniMessage.miniMessage().deserialize(
+                    "<#91f251>/spawnelytra set style <#ffd166>classic<#aaa8a8> | <#ffd166>small_caps"
+                            + " <#aaa8a8>(current: <#91f251>" + currentStyle + "<#aaa8a8>)"));
+            return;
+        }
 
         MessageUtil.send(player, "settings_change_language");
         
@@ -991,6 +1055,10 @@ public final class Main extends JavaPlugin implements Listener {
         return this.playerDataManager;
     }
 
+    public TempElytraManager getTempElytraManager() {
+        return this.tempElytraManager;
+    }
+
     public com.blaxk.spawnelytra.setup.SetupManager getSetupManager() {
         return this.setupManager;
     }
@@ -998,6 +1066,11 @@ public final class Main extends JavaPlugin implements Listener {
     public void reload() {
         this.reloadConfig();
         MessageUtil.loadMessages(this);
+        BedrockSupport.reloadSettings(this);
+
+        if (tempElytraManager != null) {
+            this.tempElytraManager.restoreAll();
+        }
 
         if (setupManager != null) {
             this.setupManager.stopAll();
