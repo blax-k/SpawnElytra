@@ -213,6 +213,16 @@ public enum ConfigUpdater {
             config.createSection("hunger_consumption");
             needsUpdate = true;
         }
+
+        if (!config.contains("bedrock")) {
+            config.set("bedrock.enabled", true);
+            needsUpdate = true;
+        }
+
+        if (config.contains("bedrock.sneak_to_boost")) {
+            config.set("bedrock.sneak_to_boost", null);
+            needsUpdate = true;
+        }
         
         if (!config.contains("worlds")) {
             config.createSection("worlds");
@@ -274,6 +284,18 @@ public enum ConfigUpdater {
             lines.add("");
             
             
+            lines.add("# Bedrock (Geyser/Floodgate) support");
+            lines.add("bedrock:");
+            lines.add("  # Bedrock Edition cannot glide without a real elytra equipped. When enabled,");
+            lines.add("  # Bedrock players inside the spawn area receive a protected temporary elytra");
+            lines.add("  # (their chestplate is stored safely and returned automatically - this is");
+            lines.add("  # logout- and crash-proof). They deploy it like a normal elytra: jump, then");
+            lines.add("  # press jump again while falling. Since Bedrock has no offhand/F key,");
+            lines.add("  # Bedrock players always boost by pressing sneak while gliding.");
+            lines.add("  enabled: true");
+            lines.add("");
+
+
             lines.add("# Message settings");
             lines.add("messages:");
             lines.add("  # Set to false to disable the \"press to boost\" message");

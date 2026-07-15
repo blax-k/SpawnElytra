@@ -7,6 +7,7 @@
 package com.blaxk.spawnelytra.setup;
 
 import com.blaxk.spawnelytra.Main;
+import com.blaxk.spawnelytra.integration.BedrockSupport;
 import com.blaxk.spawnelytra.util.DisplayNames;
 import com.blaxk.spawnelytra.util.MessageUtil;
 import com.blaxk.spawnelytra.util.SchedulerUtil;
@@ -174,12 +175,18 @@ public class SetupManager implements Listener {
         
         MessageUtil.send(player, "setup_options_header");
 
-        
+
         String current = session.getActivationMode();
         if (current == null) {
             final String worldName = player.getWorld().getName();
             current = this.plugin.getConfig().getString("worlds." + worldName + ".activation_mode", "double_jump");
         }
+
+        if (BedrockSupport.isBedrockPlayer(player)) {
+            this.showOptionsPlain(player, session, current);
+            return;
+        }
+
         final String text = "<#91f251>" +
                 this.option("/spawnelytra setup mode double_jump", DisplayNames.activationMode("double_jump"), "activation_mode_hover_double_jump", "double_jump".equalsIgnoreCase(current)) + " " +
                 this.option("/spawnelytra setup mode auto", DisplayNames.activationMode("auto"), "activation_mode_hover_auto", "auto".equalsIgnoreCase(current)) + " " +
@@ -205,6 +212,26 @@ public class SetupManager implements Listener {
         final String actions = "<#ffd166>[<click:run_command:'/spawnelytra setup save'><hover:show_text:'<#ffd166>" + saveHover + "'>" + saveLabel + "</hover></click>] " +
                 "<#aaa8a8>[<click:run_command:'/spawnelytra setup exit'><hover:show_text:'<#fd5e5e>" + exitHover + "'>" + exitLabel + "</hover></click>]";
         MessageUtil.sendRaw(player, MiniMessage.miniMessage().deserialize(actions));
+    }
+
+    private void showOptionsPlain(final Player player, final SetupSession session, final String currentMode) {
+        MessageUtil.sendRaw(player, MiniMessage.miniMessage().deserialize(
+                "<#91f251>/spawnelytra setup mode <#ffd166>double_jump<#aaa8a8> | <#ffd166>auto<#aaa8a8> | <#ffd166>sneak_jump<#aaa8a8> | <#ffd166>f_key"
+                        + " <#aaa8a8>(current: <#91f251>" + currentMode + "<#aaa8a8>)"));
+
+        final String onLabel = MessageUtil.plain("state_on");
+        final String offLabel = MessageUtil.plain("state_off");
+        final String boostLabel = MessageUtil.plain("setup_toggle_boost_label");
+        final String pressLabel = MessageUtil.plain("setup_toggle_press_label");
+        final String boostState = session.isShowBoostActivated() ? ("<#91f251>" + onLabel) : ("<#fd5e5e>" + offLabel);
+        final String pressState = session.isShowPressToBoost() ? ("<#91f251>" + onLabel) : ("<#fd5e5e>" + offLabel);
+        MessageUtil.sendRaw(player, MiniMessage.miniMessage().deserialize(
+                "<#5db3ff>" + boostLabel + ": " + boostState + " <#aaa8a8>- /spawnelytra setup toggle boost"));
+        MessageUtil.sendRaw(player, MiniMessage.miniMessage().deserialize(
+                "<#5db3ff>" + pressLabel + ": " + pressState + " <#aaa8a8>- /spawnelytra setup toggle press"));
+
+        MessageUtil.sendRaw(player, MiniMessage.miniMessage().deserialize(
+                "<#ffd166>/spawnelytra setup save <#aaa8a8>• <#fd5e5e>/spawnelytra setup exit"));
     }
 
     private String option(final String cmd, final String label, final String hoverKey, final boolean selected) {

@@ -62,15 +62,29 @@ _Players can use an Elytra-like feature while in spawn and when leaving spawn. Y
 ### Integrations & Compatibility
 - **Multi-Language Support**: Built-in support for English, German, Spanish and French
 - **PlaceholderAPI Integration**: Advanced placeholder support for other plugins
+- **Geyser/Floodgate Support**: Full Bedrock Edition support (see below)
 - **Legacy Migration**: Automatic migration from CraftAttackSpawnElytra plugin with detection to prevent re-migration
 - **Metrics**: bStats integration for anonymous usage statistics
 
-## Installation
+### Bedrock (Geyser/Floodgate) Support
+Bedrock Edition clients are authoritative about gliding and refuse to glide without a real
+elytra equipped, so the invisible-elytra trick used for Java players cannot work there.
+Instead, SpawnElytra detects Bedrock players (via the Floodgate API, the Geyser API, or the
+Floodgate UUID format on proxy setups) and:
 
-1. Download the latest release from [Modrinth](https://modrinth.com/plugin/spawn-elytra) or the [GitHub Releases](https://github.com/blax-k/SpawnElytra/releases)
-2. Place the .jar file in your server's plugins folder
-3. Restart your server
-4. Configure the plugin in the generated config.yml file
+- **Temporary elytra**: While inside the spawn area, Bedrock players receive a protected,
+  unbreakable temporary elytra and deploy it natively (jump, then press jump again while
+  falling). Their original chestplate is stored in the player's own persistent data, which
+  is saved atomically with the inventory and returned automatically when they leave the
+  area, land outside it, log out, die, or the server crashes mid-flight. The temporary
+  elytra cannot be moved, dropped, stored, or duplicated. Other players keep seeing the
+  original chestplate, and the "Sky's the Limit" advancement is granted without the chat
+  broadcast. Players who rejoin mid-flight simply keep flying and get their chestplate
+  back when they land.
+- **Sneak to boost**: Bedrock has no offhand/F key, so Bedrock players boost by pressing
+  sneak while gliding.
+- **No clickable chat**: Bedrock cannot click chat components, so all interactive menus
+  (welcome, settings, setup, update notifications) show plain commands to Bedrock players.
 
 ### Important:
 The **default language** of this plugin **is German**, but you can change it to English by changing `language: de` to `language: en` in config.yml!

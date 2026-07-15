@@ -47,12 +47,16 @@ public class SetupSession {
         this.showPressToBoost = this.plugin.getConfig().getBoolean("messages.show_press_to_boost", true);
 
         MessageUtil.send(this.player, "setup_started");
-        
+
         final String exitLabel = MessageUtil.plain("setup_exit_label");
         final String exitHover = MessageUtil.plain("setup_exit_hover");
-        MessageUtil.sendRaw(this.player, net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
-                "<#aaa8a8>[<click:run_command:'/spawnelytra setup exit'><hover:show_text:'" + exitHover + "'>" + exitLabel + "</hover></click>]")
-        );
+        final String exitText;
+        if (com.blaxk.spawnelytra.integration.BedrockSupport.isBedrockPlayer(this.player)) {
+            exitText = "<#aaa8a8>" + exitLabel + ": /spawnelytra setup exit";
+        } else {
+            exitText = "<#aaa8a8>[<click:run_command:'/spawnelytra setup exit'><hover:show_text:'" + exitHover + "'>" + exitLabel + "</hover></click>]";
+        }
+        MessageUtil.sendRaw(this.player, net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(exitText));
     }
 
     public void end() {

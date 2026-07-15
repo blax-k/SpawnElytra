@@ -79,6 +79,9 @@ public enum MessageUtil {
 
         MessageUtil.DEFAULT_MESSAGES.put("press_to_boost", "<#91f251>Press <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>to boost yourself");
         MessageUtil.DEFAULT_MESSAGES.put("press_to_boost_remaining", "<#91f251>Press <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>to boost <#ffd166>(<remaining> remaining)");
+        MessageUtil.DEFAULT_MESSAGES.put("press_to_boost_bedrock", "<#91f251>Press <bold><#74ea31>Sneak</bold> <#91f251>to boost yourself");
+        MessageUtil.DEFAULT_MESSAGES.put("press_to_boost_remaining_bedrock", "<#91f251>Press <bold><#74ea31>Sneak</bold> <#91f251>to boost <#ffd166>(<remaining> remaining)");
+        MessageUtil.DEFAULT_MESSAGES.put("temp_elytra_lore", "<#aaa8a8>Temporary");
         MessageUtil.DEFAULT_MESSAGES.put("boost_activated", "<#74ea31><bold>Boost activated!</bold>");
         MessageUtil.DEFAULT_MESSAGES.put("boost_activated_remaining", "<#74ea31><bold>Boost activated!</bold> <#ffd166>(<remaining> remaining)");
 
@@ -233,6 +236,8 @@ public enum MessageUtil {
 
         MessageUtil.messageToggles.clear();
         MessageUtil.messageToggles.put("press_to_boost", config.getBoolean("messages.show_press_to_boost", true));
+        MessageUtil.messageToggles.put("press_to_boost_bedrock", config.getBoolean("messages.show_press_to_boost", true));
+        MessageUtil.messageToggles.put("press_to_boost_remaining_bedrock", config.getBoolean("messages.show_press_to_boost", true));
         MessageUtil.messageToggles.put("boost_activated", config.getBoolean("messages.show_boost_activated", true));
         MessageUtil.messageToggles.put("creative_mode_elytra_disabled", config.getBoolean("messages.show_creative_disabled", false));
     }

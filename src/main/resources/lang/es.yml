@@ -1,6 +1,9 @@
 # Spanish language file
 press_to_boost: "<#91f251>Presiona <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>para impulsarte"
 press_to_boost_remaining: "<#91f251>Presiona <bold><#74ea31><key:key.swapOffhand></bold> <#91f251>para impulsarte <#ffd166>(<remaining> restantes)"
+press_to_boost_bedrock: "<#91f251>Presiona <bold><#74ea31>Agacharse</bold> <#91f251>para impulsarte"
+press_to_boost_remaining_bedrock: "<#91f251>Presiona <bold><#74ea31>Agacharse</bold> <#91f251>para impulsarte <#ffd166>(<remaining> restantes)"
+temp_elytra_lore: "<#aaa8a8>Temporal"
 boost_activated: "<#74ea31>¡Impulso activado!"
 boost_activated_remaining: "<#74ea31>¡Impulso activado! <#ffd166>(<remaining> restantes)"
 failed_update_check: "<#fd5e5e>Error al comprobar actualizaciones: <error_message>"
