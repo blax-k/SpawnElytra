@@ -1,0 +1,42 @@
+name: draft-release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  draft-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "gradle"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build --no-daemon --parallel --console=plain
+
+      - name: Read plugin version
+        id: version
+        run: echo "version=$(grep -oP '(?<=^version = ")[^"]+' build.gradle.kts)" >> $GITHUB_OUTPUT
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.version.outputs.version }}" \
+            "build/libs/spawnelytra-${{ steps.version.outputs.version }}.jar" \
+            --draft \
+            --title "v${{ steps.version.outputs.version }}" \
+            --notes "" \
+            --target "${{ github.sha }}"
