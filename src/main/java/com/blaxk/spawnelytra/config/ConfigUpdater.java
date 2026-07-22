@@ -18,6 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public enum ConfigUpdater {
     ;
@@ -183,7 +185,11 @@ public enum ConfigUpdater {
     
     private static void updateModernConfig(final JavaPlugin plugin, final FileConfiguration config, final File configFile) {
         boolean needsUpdate = false;
-        
+
+        if (ConfigUpdater.hasStaleVersionLabels(configFile)) {
+            needsUpdate = true;
+        }
+
         if (!config.contains("language")) {
             config.set("language", "en");
             needsUpdate = true;
@@ -216,6 +222,13 @@ public enum ConfigUpdater {
 
         if (!config.contains("bedrock")) {
             config.set("bedrock.enabled", true);
+            config.setComments("bedrock", List.of(
+                    "Bedrock (Geyser/Floodgate) support",
+                    "Bedrock Edition cannot glide without a real elytra equipped. When enabled,",
+                    "Bedrock players inside the spawn area receive a temporary elytra. They use",
+                    "it like a normal elytra: jump, then press jump again while falling. Since",
+                    "Bedrock has no offhand/F key, Bedrock players always boost by pressing sneak",
+                    "while gliding."));
             needsUpdate = true;
         }
 
@@ -223,21 +236,71 @@ public enum ConfigUpdater {
             config.set("bedrock.sneak_to_boost", null);
             needsUpdate = true;
         }
-        
+
         if (!config.contains("worlds")) {
             config.createSection("worlds");
             needsUpdate = true;
         }
-        
+
+        final ConfigurationSection worldsSection = config.getConfigurationSection("worlds");
+        if (worldsSection != null) {
+            for (final String worldName : worldsSection.getKeys(false)) {
+                final ConfigurationSection worldSection = worldsSection.getConfigurationSection(worldName);
+                if (worldSection == null) {
+                    continue;
+                }
+                if (!worldSection.contains("boost.max_boosts")) {
+                    worldSection.set("boost.max_boosts", 1);
+                    worldSection.setComments("boost.max_boosts",
+                            List.of("Maximum number of boosts allowed per elytra flight (1 = single boost)"));
+                    needsUpdate = true;
+                }
+                if (!worldSection.contains("boost.boost_cooldown")) {
+                    worldSection.set("boost.boost_cooldown", 0);
+                    worldSection.setComments("boost.boost_cooldown",
+                            List.of("Cooldown in seconds between boosts (0 = no cooldown, only applies when max_boosts > 1)"));
+                    needsUpdate = true;
+                }
+            }
+        }
+
         if (needsUpdate) {
             try {
                 BackupUtil.backupFile(plugin, configFile, "config/config.yml");
                 config.save(configFile);
+                ConfigUpdater.refreshVersionLabels(configFile);
                 plugin.getLogger().info("Updated v" + ConfigUpdater.CURRENT_CONFIG_VERSION + " config with missing fields.");
             } catch (final IOException e) {
                 plugin.getLogger().severe("Failed to save v" + ConfigUpdater.CURRENT_CONFIG_VERSION + " config: " + e.getMessage());
             }
         }
+    }
+
+    private static final Pattern VERSION_LABEL = Pattern.compile("(?m)^# Plugin Version: (.+?)\\s*$");
+    private static final Pattern LANGUAGES_LABEL = Pattern.compile("(?m)^# Available languages: .+$");
+    private static final String LANGUAGES_LINE = "# Available languages: en, de, es, fr, pl";
+
+    private static boolean hasStaleVersionLabels(final File configFile) {
+        try {
+            final String content = Files.readString(configFile.toPath(), StandardCharsets.UTF_8);
+            final Matcher version = ConfigUpdater.VERSION_LABEL.matcher(content);
+            if (version.find() && !ConfigUpdater.CURRENT_CONFIG_VERSION.equals(version.group(1))) {
+                return true;
+            }
+            final Matcher languages = ConfigUpdater.LANGUAGES_LABEL.matcher(content);
+            return languages.find() && !ConfigUpdater.LANGUAGES_LINE.equals(languages.group());
+        } catch (final IOException e) {
+            return false;
+        }
+    }
+
+    private static void refreshVersionLabels(final File configFile) throws IOException {
+        String content = Files.readString(configFile.toPath(), StandardCharsets.UTF_8);
+        content = ConfigUpdater.VERSION_LABEL.matcher(content)
+                .replaceFirst("# Plugin Version: " + ConfigUpdater.CURRENT_CONFIG_VERSION);
+        content = ConfigUpdater.LANGUAGES_LABEL.matcher(content)
+                .replaceFirst(Matcher.quoteReplacement(ConfigUpdater.LANGUAGES_LINE));
+        Files.writeString(configFile.toPath(), content, StandardCharsets.UTF_8);
     }
     
     
@@ -263,7 +326,7 @@ public enum ConfigUpdater {
             lines.add("");
             
             
-            lines.add("# Available languages: en, de, es, fr, ar, pl");
+            lines.add("# Available languages: en, de, es, fr, pl");
             lines.add("language: " + language);
             lines.add("");
             
@@ -287,11 +350,10 @@ public enum ConfigUpdater {
             lines.add("# Bedrock (Geyser/Floodgate) support");
             lines.add("bedrock:");
             lines.add("  # Bedrock Edition cannot glide without a real elytra equipped. When enabled,");
-            lines.add("  # Bedrock players inside the spawn area receive a protected temporary elytra");
-            lines.add("  # (their chestplate is stored safely and returned automatically - this is");
-            lines.add("  # logout- and crash-proof). They deploy it like a normal elytra: jump, then");
-            lines.add("  # press jump again while falling. Since Bedrock has no offhand/F key,");
-            lines.add("  # Bedrock players always boost by pressing sneak while gliding.");
+            lines.add("  # Bedrock players inside the spawn area receive a temporary elytra. They use");
+            lines.add("  # it like a normal elytra: jump, then press jump again while falling. Since");
+            lines.add("  # Bedrock has no offhand/F key, Bedrock players always boost by pressing sneak");
+            lines.add("  # while gliding.");
             lines.add("  enabled: true");
             lines.add("");
 
