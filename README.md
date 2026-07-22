@@ -60,7 +60,7 @@ _Players can use an Elytra-like feature while in spawn and when leaving spawn. Y
 - **Update Notifications**: Automatic notification when new plugin versions are available
 
 ### Integrations & Compatibility
-- **Multi-Language Support**: Built-in support for English, German, Spanish and French
+- **Multi-Language Support**: Built-in support for English, German, Spanish, French and Polish
 - **PlaceholderAPI Integration**: Advanced placeholder support for other plugins
 - **Geyser/Floodgate Support**: Full Bedrock Edition support (see below)
 - **Legacy Migration**: Automatic migration from CraftAttackSpawnElytra plugin with detection to prevent re-migration
@@ -87,7 +87,7 @@ Floodgate UUID format on proxy setups) and:
   (welcome, settings, setup, update notifications) show plain commands to Bedrock players.
 
 ### Important:
-The **default language** of this plugin **is German**, but you can change it to English by changing `language: de` to `language: en` in config.yml!
+The **default language** of this plugin **is English**, but you can change it (e.g. to German) by changing `language: en` to `language: de` in config.yml, or simply use the in-game language picker shown on first install!
 
 ## Configuration
 
@@ -96,14 +96,14 @@ The **default language** of this plugin **is German**, but you can change it to 
 
 ```yaml
 # Spawn Elytra Plugin by blaxk
-# Plugin Version: 1.4
+# Plugin Version: 1.5
 # Modrinth: https://modrinth.com/plugin/spawn-elytra
 
 # ==========================================
 # GLOBAL SETTINGS
 # ==========================================
 
-# Available languages: en, de, es, fr, ar
+# Available languages: en, de, es, fr, pl
 language: en
 
 # Game mode restrictions
@@ -117,6 +117,16 @@ game_modes:
 fireworks:
   # Disable fireworks when using spawn elytra (players can still use fireworks if they have a real elytra equipped)
   disable_in_spawn_elytra: false
+
+# Bedrock (Geyser/Floodgate) support
+bedrock:
+  # Bedrock Edition cannot glide without a real elytra equipped. When enabled,
+  # Bedrock players inside the spawn area receive a protected temporary elytra
+  # (their chestplate is stored safely and returned automatically - this is
+  # logout- and crash-proof). They deploy it like a normal elytra: jump, then
+  # press jump again while falling. Since Bedrock has no offhand/F key,
+  # Bedrock players always boost by pressing sneak while gliding.
+  enabled: true
 
 # Message settings
 messages:
@@ -215,11 +225,15 @@ worlds:
       # Enable boost functionality
       enabled: true
       # The strength of the boost when pressing the boost key
-      strength: 3
+      strength: 4
       # Boost direction: 'forward' or 'upward'
       # forward: Boosts player in the direction they are looking
       # upward: Boosts player straight up
       direction: forward
+      # Maximum number of boosts allowed per elytra flight (1 = single boost)
+      max_boosts: 1
+      # Cooldown in seconds between boosts (0 = no cooldown, only applies when max_boosts > 1)
+      boost_cooldown: 0
       # Boost sound effect - can be any sound from https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html
       # Examples: ENTITY_BAT_TAKEOFF, ENTITY_FIREWORK_ROCKET_BLAST, ITEM_ELYTRA_FLYING
       sound: ENTITY_BAT_TAKEOFF
