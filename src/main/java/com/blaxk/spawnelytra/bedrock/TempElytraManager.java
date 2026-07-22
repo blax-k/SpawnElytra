@@ -7,10 +7,10 @@
 package com.blaxk.spawnelytra.bedrock;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -61,7 +61,8 @@ public class TempElytraManager implements Listener {
     private final NamespacedKey tempElytraKey;
     private final NamespacedKey storedChestplateKey;
 
-    private final Map<UUID, ItemStack> disguisedChestplates = new HashMap<>();
+    // Written on the wearer's region thread, read on viewers' threads (Folia).
+    private final Map<UUID, ItemStack> disguisedChestplates = new ConcurrentHashMap<>();
 
     public TempElytraManager(final Main plugin) {
         this.plugin = plugin;
@@ -147,10 +148,13 @@ public class TempElytraManager implements Listener {
 
     public void restoreAll() {
         for (final Player player : Bukkit.getOnlinePlayers()) {
-            if (this.keepEquippedWhileAirborne(player)) {
-                continue;
-            }
-            this.ensureRestored(player);
+            // Inventory edits must happen on the player's own thread (Folia regions).
+            SchedulerUtil.runForEntity(this.plugin, player, () -> {
+                if (this.keepEquippedWhileAirborne(player)) {
+                    return;
+                }
+                this.ensureRestored(player);
+            });
         }
     }
 
@@ -266,8 +270,8 @@ public class TempElytraManager implements Listener {
         final Player player = event.getPlayer();
 
         if (this.hasTempElytraEquipped(player) && BedrockSupport.isManaged(player)) {
-            final SpawnElytra instance = this.plugin.getSpawnElytraInstance(player.getWorld().getName());
-            if (instance != null && instance.isValid()) {
+            final SpawnElytra instance = this.plugin.getSpawnElytra();
+            if (instance != null && this.plugin.getZoneService().registry().hasEnabledZones(player.getWorld().getName())) {
                 this.ensureEquipped(player);
                 instance.resumeBedrockFlight(player);
                 return;

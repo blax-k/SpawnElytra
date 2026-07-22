@@ -37,8 +37,10 @@ public enum MessageUtil {
     private static final Map<Character, String> SMALL_CAPS_MAP;
     private static final Pattern UPPERCASE_PLACEHOLDER_PATTERN = Pattern.compile("<([A-Za-z0-9_-]*[A-Z][A-Za-z0-9_-]*)>");
 
-    private static final Map<String, String> messages = new HashMap<>();
-    private static final Map<String, Boolean> messageToggles = new HashMap<>();
+    // Replaced atomically on (re)load: readers on other region threads (Folia) never see a half-filled map.
+    private static volatile Map<String, String> messages = Map.of();
+    private static volatile Map<String, Boolean> messageToggles = Map.of();
+    private static volatile boolean smallCaps;
     private static Plugin plugin;
     private static BukkitAudiences audiences;
     private static boolean isPaperNativeAdventure = false;
@@ -139,12 +141,18 @@ public enum MessageUtil {
     public static void initialize(final Plugin plugin) {
         MessageUtil.plugin = plugin;
 
-        try {
-            Class.forName("io.papermc.paper.text.PaperComponents");
-            isPaperNativeAdventure = true;
-        } catch (final ClassNotFoundException e) {
-            isPaperNativeAdventure = false;
+        // Native Adventure: senders are Audiences. PaperComponents alone is not a reliable marker
+        // (deprecated API that newer Paper/Folia builds may drop).
+        boolean nativeAdventure = net.kyori.adventure.audience.Audience.class.isAssignableFrom(CommandSender.class);
+        if (!nativeAdventure) {
+            try {
+                Class.forName("io.papermc.paper.text.PaperComponents");
+                nativeAdventure = true;
+            } catch (final ClassNotFoundException e) {
+                nativeAdventure = false;
+            }
         }
+        isPaperNativeAdventure = nativeAdventure;
 
         if (!isPaperNativeAdventure) {
             audiences = BukkitAudiences.create(plugin);
@@ -215,31 +223,35 @@ public enum MessageUtil {
         final String rawStyle = config.getString("messages.style", "classic");
         final String style = (rawStyle == null ? "classic" : rawStyle).toLowerCase(Locale.ROOT);
 
-        MessageUtil.messages.clear();
+        final Map<String, String> loadedMessages = new HashMap<>();
 
-        MessageUtil.DEFAULT_MESSAGES.forEach((key, value) -> MessageUtil.messages.put(key, MessageUtil.normalizePlaceholders(value)));
+        MessageUtil.DEFAULT_MESSAGES.forEach((key, value) -> loadedMessages.put(key, MessageUtil.normalizePlaceholders(value)));
 
         final Map<String, String> englishMessages = MessageUtil.loadLanguageMessages(plugin, "en");
-        englishMessages.forEach((key, value) -> MessageUtil.messages.put(key, MessageUtil.normalizePlaceholders(value)));
+        englishMessages.forEach((key, value) -> loadedMessages.put(key, MessageUtil.normalizePlaceholders(value)));
 
         final Map<String, String> languageMessages = MessageUtil.loadLanguageMessages(plugin, language);
-        languageMessages.forEach((key, value) -> MessageUtil.messages.put(key, MessageUtil.normalizePlaceholders(value)));
+        languageMessages.forEach((key, value) -> loadedMessages.put(key, MessageUtil.normalizePlaceholders(value)));
 
         if ("small_caps".equals(style) && ("en".equals(language) || "de".equals(language))) {
-            for (final Map.Entry<String, String> entry : new HashMap<>(MessageUtil.messages).entrySet()) {
+            for (final Map.Entry<String, String> entry : new HashMap<>(loadedMessages).entrySet()) {
                 final String current = entry.getValue();
                 if (current != null) {
-                    MessageUtil.messages.put(entry.getKey(), MessageUtil.toSmallCapsPreservingTags(current));
+                    loadedMessages.put(entry.getKey(), MessageUtil.toSmallCapsPreservingTags(current));
                 }
             }
         }
 
-        MessageUtil.messageToggles.clear();
-        MessageUtil.messageToggles.put("press_to_boost", config.getBoolean("messages.show_press_to_boost", true));
-        MessageUtil.messageToggles.put("press_to_boost_bedrock", config.getBoolean("messages.show_press_to_boost", true));
-        MessageUtil.messageToggles.put("press_to_boost_remaining_bedrock", config.getBoolean("messages.show_press_to_boost", true));
-        MessageUtil.messageToggles.put("boost_activated", config.getBoolean("messages.show_boost_activated", true));
-        MessageUtil.messageToggles.put("creative_mode_elytra_disabled", config.getBoolean("messages.show_creative_disabled", false));
+        final Map<String, Boolean> loadedToggles = new HashMap<>();
+        loadedToggles.put("press_to_boost", config.getBoolean("messages.show_press_to_boost", true));
+        loadedToggles.put("press_to_boost_bedrock", config.getBoolean("messages.show_press_to_boost", true));
+        loadedToggles.put("press_to_boost_remaining_bedrock", config.getBoolean("messages.show_press_to_boost", true));
+        loadedToggles.put("boost_activated", config.getBoolean("messages.show_boost_activated", true));
+        loadedToggles.put("creative_mode_elytra_disabled", config.getBoolean("messages.show_creative_disabled", false));
+
+        MessageUtil.smallCaps = "small_caps".equals(style) && ("en".equals(language) || "de".equals(language));
+        MessageUtil.messages = loadedMessages;
+        MessageUtil.messageToggles = loadedToggles;
     }
 
     private static Map<String, String> loadLanguageMessages(final Plugin plugin, final String language) {
@@ -398,6 +410,44 @@ public enum MessageUtil {
         } else if (audiences != null) {
             MessageUtil.audiences.player(player).sendActionBar(component);
         }
+    }
+
+    public static void sendActionBarRaw(final Player player, final Component component) {
+        if (isPaperNativeAdventure) {
+            player.sendActionBar(component);
+        } else if (audiences != null) {
+            MessageUtil.audiences.player(player).sendActionBar(component);
+        }
+    }
+
+    public static void showBossBar(final Player player, final net.kyori.adventure.bossbar.BossBar bar) {
+        if (isPaperNativeAdventure) {
+            player.showBossBar(bar);
+        } else if (audiences != null) {
+            MessageUtil.audiences.player(player).showBossBar(bar);
+        }
+    }
+
+    public static void hideBossBar(final Player player, final net.kyori.adventure.bossbar.BossBar bar) {
+        if (isPaperNativeAdventure) {
+            player.hideBossBar(bar);
+        } else if (audiences != null) {
+            MessageUtil.audiences.player(player).hideBossBar(bar);
+        }
+    }
+
+    /** Whether a message key exists in the loaded language (or defaults). */
+    public static boolean has(final String key) {
+        return MessageUtil.messages.containsKey(key) || MessageUtil.DEFAULT_MESSAGES.containsKey(key);
+    }
+
+    /** Raw MiniMessage template of a key (already small-caps converted when that style is active). */
+    public static String raw(final String key) {
+        return MessageUtil.messages.getOrDefault(key, MessageUtil.DEFAULT_MESSAGES.getOrDefault(key, key));
+    }
+
+    public static boolean isSmallCaps() {
+        return MessageUtil.smallCaps;
     }
 
     public static void sendRaw(final Player player, final Component component) {

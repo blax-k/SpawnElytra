@@ -13,12 +13,12 @@ import com.google.gson.JsonParser;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.DrilldownPie;
 import org.bukkit.Bukkit;
-import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -35,13 +35,17 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.blaxk.spawnelytra.util.SchedulerUtil;
+import com.blaxk.spawnelytra.util.SoundUtil;
 import com.blaxk.spawnelytra.util.MessageUtil;
 import com.blaxk.spawnelytra.util.UpdateUtil;
 import com.blaxk.spawnelytra.util.DisplayNames;
@@ -50,6 +54,10 @@ import com.blaxk.spawnelytra.command.CommandHandler;
 import com.blaxk.spawnelytra.config.ConfigUpdater;
 import com.blaxk.spawnelytra.config.LanguageUpdater;
 import com.blaxk.spawnelytra.listener.SpawnElytra;
+import com.blaxk.spawnelytra.editor.EditorManager;
+import com.blaxk.spawnelytra.menu.MenuService;
+import com.blaxk.spawnelytra.visual.Visualizer;
+import com.blaxk.spawnelytra.zone.ZoneService;
 import com.blaxk.spawnelytra.data.PlayerDataManager;
 import com.blaxk.spawnelytra.integration.BedrockSupport;
 import com.blaxk.spawnelytra.integration.PlaceholderAPIIntegration;
@@ -57,21 +65,29 @@ import org.jetbrains.annotations.NotNull;
 
 public final class Main extends JavaPlugin implements Listener {
     public static Main plugin;
-    private static final String CURRENT_VERSION = "1.5";
+    private static final String CURRENT_VERSION = com.blaxk.spawnelytra.common.SpawnElytraCore.VERSION;
     private static final String MODRINTH_PROJECT_ID = "Egw2R8Fj";
     private static final String MIGRATION_NOTICE_FILENAME = "MIGRATED_TO_SPAWN_ELYTRA.txt";
 
     private PlayerDataManager playerDataManager;
     private TempElytraManager tempElytraManager;
-    private final Map<String, SpawnElytra> worldInstances = new HashMap<>();
-    private final Map<String, String> lastMenuSent = new HashMap<>();
-    private int remainingFirstInstallShows = 5;
+    // Read from every region thread on Folia (events, placeholders, commands), so these must be concurrent.
+    private final Map<String, String> lastMenuSent = new ConcurrentHashMap<>();
+    private final ZoneService zoneService = new ZoneService(this);
+    private SpawnElytra elytra;
+    private EditorManager editorManager;
+    private MenuService menuService;
+    private Visualizer visualizer;
+    private CommandHandler commandHandler;
+    private final java.util.Set<String> registeredTierPermissions = ConcurrentHashMap.newKeySet();
+    private final AtomicInteger remainingFirstInstallShows = new AtomicInteger(5);
 
-    private com.blaxk.spawnelytra.setup.SetupManager setupManager;
 
-    private String latestVersion;
-    private boolean updateAvailable;
+    // Written by the async version checker, read on join from region/main threads.
+    private volatile String latestVersion;
+    private volatile boolean updateAvailable;
     private SchedulerUtil.TaskHandle versionCheckTask;
+    private Metrics metrics;
 
     @Override
     public void onEnable() {
@@ -105,7 +121,23 @@ public final class Main extends JavaPlugin implements Listener {
         this.saveLanguageFiles();
         LanguageUpdater.updateLanguages(this, migratedFromV13);
         MessageUtil.loadMessages(this);
-        this.loadWorldConfigurations();
+        this.zoneService.load();
+        this.registerTierPermissions();
+    }
+
+    /** Tier permissions default to false for everyone, ops included (spec section 3). */
+    private void registerTierPermissions() {
+        final org.bukkit.plugin.PluginManager pm = Bukkit.getPluginManager();
+        for (final com.blaxk.spawnelytra.common.tier.PermissionTier tier : this.zoneService.globals().tiers()) {
+            final String node = tier.permission();
+            if (this.registeredTierPermissions.add(node) && pm.getPermission(node) == null) {
+                try {
+                    pm.addPermission(new org.bukkit.permissions.Permission(node,
+                            "Spawn Elytra permission tier '" + tier.name() + "'", org.bukkit.permissions.PermissionDefault.FALSE));
+                } catch (final IllegalArgumentException alreadyRegistered) {
+                }
+            }
+        }
     }
 
     private void showFirstInstallWelcomeIfNeeded() {
@@ -121,8 +153,8 @@ public final class Main extends JavaPlugin implements Listener {
 
     private void setupBStats() {
         final int pluginId = 25081;
-        final Metrics metrics = new Metrics(this, pluginId);
-        this.setupMetrics(metrics);
+        this.metrics = new Metrics(this, pluginId);
+        this.setupMetrics(this.metrics);
     }
 
     private void registerListenersAndCommands() {
@@ -138,12 +170,20 @@ public final class Main extends JavaPlugin implements Listener {
         } catch (final ClassNotFoundException spigot) {
         }
 
-        this.setupManager = new com.blaxk.spawnelytra.setup.SetupManager(this);
-        Bukkit.getPluginManager().registerEvents(this.setupManager, this);
+        this.elytra = new SpawnElytra(this, this.zoneService);
+        Bukkit.getPluginManager().registerEvents(this.elytra, this);
 
-        final CommandHandler commandHandler = new CommandHandler(this);
-        Objects.requireNonNull(this.getCommand("spawnelytra")).setExecutor(commandHandler);
-        Objects.requireNonNull(this.getCommand("spawnelytra")).setTabCompleter(commandHandler);
+        this.menuService = new MenuService(this);
+        this.editorManager = new EditorManager(this);
+        Bukkit.getPluginManager().registerEvents(this.editorManager, this);
+        this.visualizer = new Visualizer(this);
+        Bukkit.getPluginManager().registerEvents(this.visualizer, this);
+
+        this.playerDataManager.startAutoFlush();
+
+        this.commandHandler = new CommandHandler(this);
+        Objects.requireNonNull(this.getCommand("spawnelytra")).setExecutor(this.commandHandler);
+        Objects.requireNonNull(this.getCommand("spawnelytra")).setTabCompleter(this.commandHandler);
     }
 
     private void registerPlaceholders() {
@@ -157,6 +197,13 @@ public final class Main extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        if (this.editorManager != null) {
+            // First: give editing players their real inventory back while we can still touch them.
+            this.editorManager.stopAll(true);
+        }
+        if (this.menuService != null) {
+            this.menuService.shutdown();
+        }
         if (tempElytraManager != null) {
             this.tempElytraManager.restoreAll();
         }
@@ -170,21 +217,35 @@ public final class Main extends JavaPlugin implements Listener {
             this.versionCheckTask = null;
         }
 
-        if (setupManager != null) {
-            this.setupManager.stopAll();
-        }
+        this.cleanupFlightForOnlinePlayers();
+        this.zoneService.shutdown();
 
-        for (final SpawnElytra instance : this.worldInstances.values()) {
-            if (instance != null) {
-                for (final Player player : Bukkit.getOnlinePlayers()) {
-                    instance.cleanupPlayer(player);
-                    instance.stopVisualization(player);
-                }
-            }
+        if (metrics != null) {
+            this.metrics.shutdown();
+            this.metrics = null;
         }
-        this.worldInstances.clear();
 
         MessageUtil.shutdown();
+    }
+
+    /**
+     * Resets per-player state (gliding, temporary allow-flight, visualization). Each player is handled on the thread
+     * that owns them: inline on Paper and during Folia shutdown, via the player's entity scheduler when a Folia
+     * command or task triggers a reload.
+     */
+    private void cleanupFlightForOnlinePlayers() {
+        final SpawnElytra listener = this.elytra;
+        if (listener == null) {
+            return;
+        }
+        for (final Player player : Bukkit.getOnlinePlayers()) {
+            SchedulerUtil.runForEntity(this, player, () -> {
+                listener.cleanupPlayer(player);
+                if (this.visualizer != null) {
+                    this.visualizer.stop(player, false);
+                }
+            });
+        }
     }
 
     @EventHandler
@@ -204,12 +265,10 @@ public final class Main extends JavaPlugin implements Listener {
     public void onPlayerQuit(final PlayerQuitEvent event) {
         final Player player = event.getPlayer();
         this.lastMenuSent.remove(player.getUniqueId().toString());
-        for (final SpawnElytra instance : this.worldInstances.values()) {
-            if (instance != null) {
-                instance.cleanupPlayer(player);
-            }
-        }
         BedrockSupport.forget(player.getUniqueId());
+        if (this.playerDataManager != null) {
+            this.playerDataManager.flushAsync(player.getUniqueId());
+        }
     }
 
     private void sendUpdateNotification(final Player player) {
@@ -396,32 +455,53 @@ public final class Main extends JavaPlugin implements Listener {
         return MiniMessage.miniMessage().deserialize(text);
     }
 
-    public SpawnElytra getSpawnElytraInstance() {
-        if (this.worldInstances.isEmpty()) {
-            return null;
-        }
-        return this.worldInstances.values().iterator().next();
+    public SpawnElytra getSpawnElytra() {
+        return this.elytra;
     }
-    
-    public void markFirstInstallCompleted() {
+
+    public ZoneService getZoneService() {
+        return this.zoneService;
+    }
+
+    public EditorManager getEditorManager() {
+        return this.editorManager;
+    }
+
+    public MenuService getMenuService() {
+        return this.menuService;
+    }
+
+    public Visualizer getVisualizer() {
+        return this.visualizer;
+    }
+
+    public CommandHandler getCommandHandler() {
+        return this.commandHandler;
+    }
+
+    /** Applies global settings changed through /se global (language, style, game modes, ...) without a full reload. */
+    public void applyGlobalSettings() {
+        synchronized (this) {
+            MessageUtil.loadMessages(this);
+            BedrockSupport.reloadSettings(this);
+        }
+        this.zoneService.reloadGlobals();
+        this.registerTierPermissions();
+    }
+
+    public synchronized void markFirstInstallCompleted() {
         if (!this.getConfig().getBoolean("first_install_completed", false)) {
             this.getConfig().set("first_install_completed", true);
             this.saveConfig();
         }
     }
-    
-    public SpawnElytra getSpawnElytraInstance(final String worldName) {
-        return this.worldInstances.get(worldName);
-    }
-    
-    public Map<String, SpawnElytra> getAllWorldInstances() {
-        return new HashMap<>(this.worldInstances);
-    }
 
     public void applyLanguageSetting(final CommandSender actor, final String langCode) {
-        this.getConfig().set("language", langCode.toLowerCase(Locale.ROOT));
-        this.saveConfig();
-        MessageUtil.loadMessages(this);
+        synchronized (this) {
+            this.getConfig().set("language", langCode.toLowerCase(Locale.ROOT));
+            this.saveConfig();
+            MessageUtil.loadMessages(this);
+        }
         
         if (actor instanceof final Player p) {
             final String ctx = this.lastMenuSent.get(p.getUniqueId().toString());
@@ -440,9 +520,11 @@ public final class Main extends JavaPlugin implements Listener {
 
     public void applyStyleSetting(final CommandSender actor, final String style) {
         final String normalized = ("small_caps".equalsIgnoreCase(style) ? "small_caps" : "classic");
-        this.getConfig().set("messages.style", normalized);
-        this.saveConfig();
-        MessageUtil.loadMessages(this);
+        synchronized (this) {
+            this.getConfig().set("messages.style", normalized);
+            this.saveConfig();
+            MessageUtil.loadMessages(this);
+        }
         
         if (actor instanceof final Player p) {
             final String ctx = this.lastMenuSent.get(p.getUniqueId().toString());
@@ -466,12 +548,11 @@ public final class Main extends JavaPlugin implements Listener {
             return;
         }
         
-        if (remainingFirstInstallShows <= 0) {
+        final int remaining = this.remainingFirstInstallShows.getAndUpdate(v -> Math.max(0, v - 1));
+        if (remaining <= 0) {
             this.markFirstInstallCompleted();
             return;
         }
-
-        this.remainingFirstInstallShows--;
 
         final boolean bedrock = BedrockSupport.isBedrockPlayer(player);
 
@@ -519,7 +600,7 @@ public final class Main extends JavaPlugin implements Listener {
         }
         MessageUtil.sendRaw(player, dismiss);
 
-        if (remainingFirstInstallShows == 0) {
+        if (remaining == 1) {
             this.markFirstInstallCompleted();
         }
     }
@@ -537,8 +618,11 @@ public final class Main extends JavaPlugin implements Listener {
         MessageUtil.send(player, "settings_current_language", Placeholder.unparsed("value", DisplayNames.language(currentLanguage)));
         MessageUtil.send(player, "settings_current_style", Placeholder.unparsed("value", this.prettyStyle(currentStyle)));
 
-        final String activeWorlds = this.worldInstances.isEmpty() ? "-" : String.join(", ", this.worldInstances.keySet());
-        MessageUtil.send(player, "settings_active_worlds", Placeholder.unparsed("value", activeWorlds));
+        final List<String> worlds = this.zoneService.registry().all().stream()
+                .filter(com.blaxk.spawnelytra.common.zone.Zone::enabled)
+                .map(com.blaxk.spawnelytra.common.zone.Zone::world).distinct().toList();
+        final String activeZones = worlds.isEmpty() ? "-" : String.join(", ", worlds);
+        MessageUtil.send(player, "settings_active_worlds", Placeholder.unparsed("value", activeZones));
 
         MessageUtil.sendRaw(player, Component.text(" "));
 
@@ -645,128 +729,6 @@ public final class Main extends JavaPlugin implements Listener {
         MessageUtil.sendRaw(player, styleComponents);
     }
 
-    private void loadWorldConfigurations() {
-        final ConfigurationSection worldsSection = this.getConfig().getConfigurationSection("worlds");
-        if (worldsSection == null) {
-            this.getLogger().warning("No worlds config found! Creating default for 'world'...");
-            this.createDefaultWorldConfig();
-            return;
-        }
-
-        for (final String worldName : worldsSection.getKeys(false)) {
-            final ConfigurationSection worldConfig = worldsSection.getConfigurationSection(worldName);
-            if (worldConfig != null && worldConfig.getBoolean("enabled", true)) {
-                if (this.validateWorldConfiguration(worldName, worldConfig)) {
-                    final World world = Bukkit.getWorld(worldName);
-                    if (world != null) {
-                        final SpawnElytra instance = new SpawnElytra(this, worldName, worldConfig);
-                        this.worldInstances.put(worldName, instance);
-                        Bukkit.getPluginManager().registerEvents(instance, this);
-                    } else {
-                        this.getLogger().warning("World '" + worldName + "' not found, skipping.");
-                    }
-                }
-            }
-        }
-
-        if (this.worldInstances.isEmpty()) {
-            this.getLogger().warning("No valid worlds configured for Spawn Elytra!");
-        }
-    }
-    
-    private boolean validateWorldConfiguration(final String worldName, final ConfigurationSection worldConfig) {
-        boolean valid = true;
-        
-        final int radius = worldConfig.getInt("radius", 100);
-        if (radius <= 0) {
-            this.getLogger().warning("[" + worldName + "] Invalid radius (" + radius + "), using default: 100");
-            worldConfig.set("radius", 100);
-            valid = false;
-        }
-        
-        final int boostStrength = worldConfig.getInt("boost.strength", 2);
-        if (boostStrength <= 0) {
-            this.getLogger().warning("[" + worldName + "] Invalid boost strength (" + boostStrength + "), using default: 2");
-            worldConfig.set("boost.strength", 2);
-            valid = false;
-        }
-        
-        final String activationMode = worldConfig.getString("activation_mode", "double_jump");
-        final List<String> validModes = List.of("double_jump", "auto", "sneak_jump", "f_key");
-        if (!validModes.contains(activationMode)) {
-            this.getLogger().warning("[" + worldName + "] Invalid activation mode '" + activationMode + "', using default: double_jump");
-            worldConfig.set("activation_mode", "double_jump");
-            valid = false;
-        }
-        
-        final String boostDirection = worldConfig.getString("boost.direction", "forward");
-        if (!"forward".equals(boostDirection) && !"upward".equals(boostDirection)) {
-            this.getLogger().warning("[" + worldName + "] Invalid boost direction '" + boostDirection + "', using default: forward");
-            worldConfig.set("boost.direction", "forward");
-            valid = false;
-        }
-        
-        try {
-            final String soundName = worldConfig.getString("boost.sound", "ENTITY_BAT_TAKEOFF");
-            Sound.valueOf(soundName.toUpperCase());
-        } catch (final IllegalArgumentException e) {
-            this.getLogger().warning("[" + worldName + "] Invalid boost sound, using default: ENTITY_BAT_TAKEOFF");
-            worldConfig.set("boost.sound", "ENTITY_BAT_TAKEOFF");
-            valid = false;
-        }
-        
-        final double fKeyLaunchStrength = worldConfig.getDouble("f_key.launch_strength", 1.5);
-        if (fKeyLaunchStrength <= 0) {
-            this.getLogger().warning("[" + worldName + "] Invalid F-key launch strength (" + fKeyLaunchStrength + "), using default: 1.5");
-            worldConfig.set("f_key.launch_strength", 1.5);
-            valid = false;
-        }
-        
-        final int maxBoosts = worldConfig.getInt("boost.max_boosts", 1);
-        if (maxBoosts < 1) {
-            this.getLogger().warning("[" + worldName + "] Invalid max_boosts (" + maxBoosts + "), using default: 1");
-            worldConfig.set("boost.max_boosts", 1);
-            valid = false;
-        }
-        
-        final double boostCooldown = worldConfig.getDouble("boost.boost_cooldown", 0);
-        if (boostCooldown < 0) {
-            this.getLogger().warning("[" + worldName + "] Invalid boost_cooldown (" + boostCooldown + "), using default: 0");
-            worldConfig.set("boost.boost_cooldown", 0);
-            valid = false;
-        }
-
-        if (!valid) {
-            this.saveConfig();
-        }
-        
-        return true;
-    }
-    
-    private void createDefaultWorldConfig() {
-        this.getConfig().set("worlds." + "world" + ".enabled", true);
-        this.getConfig().set("worlds." + "world" + ".activation_mode", "double_jump");
-        this.getConfig().set("worlds." + "world" + ".radius", 100);
-        this.getConfig().set("worlds." + "world" + ".spawn_area.mode", "auto");
-        this.getConfig().set("worlds." + "world" + ".spawn_area.area_type", "circular");
-        this.getConfig().set("worlds." + "world" + ".spawn_area.x", 0);
-        this.getConfig().set("worlds." + "world" + ".spawn_area.y", 64);
-        this.getConfig().set("worlds." + "world" + ".spawn_area.z", 0);
-        this.getConfig().set("worlds." + "world" + ".spawn_area.x2", 0);
-        this.getConfig().set("worlds." + "world" + ".spawn_area.y2", 0);
-        this.getConfig().set("worlds." + "world" + ".spawn_area.z2", 0);
-        this.getConfig().set("worlds." + "world" + ".boost.enabled", true);
-        this.getConfig().set("worlds." + "world" + ".boost.strength", 2);
-        this.getConfig().set("worlds." + "world" + ".boost.direction", "forward");
-        this.getConfig().set("worlds." + "world" + ".boost.max_boosts", 1);
-        this.getConfig().set("worlds." + "world" + ".boost.boost_cooldown", 0);
-        this.getConfig().set("worlds." + "world" + ".boost.sound", "ENTITY_BAT_TAKEOFF");
-        this.getConfig().set("worlds." + "world" + ".f_key.launch_strength", 1.5);
-        this.saveConfig();
-        this.reloadConfig();
-        this.loadWorldConfigurations();
-    }
-    
     private void setupMetrics(final Metrics metrics) {
         metrics.addCustomChart(new DrilldownPie("configured_language", () -> {
             String lang = this.getConfig().getString("language", "en");
@@ -785,61 +747,32 @@ public final class Main extends JavaPlugin implements Listener {
 
         metrics.addCustomChart(new DrilldownPie("worlds_configured", () -> {
             final Map<String, Integer> worldCount = new HashMap<>();
-            worldCount.put(String.valueOf(this.worldInstances.size()), 1);
-            
+            final long worlds = this.zoneService.registry().all().stream().map(com.blaxk.spawnelytra.common.zone.Zone::world).distinct().count();
+            worldCount.put(String.valueOf(worlds), 1);
             final Map<String, Map<String, Integer>> outer = new HashMap<>();
             outer.put("world_count", worldCount);
             return outer;
         }));
 
         metrics.addCustomChart(new DrilldownPie("activation_mode", () -> {
-            final Map<String, Integer> modeCounts = new HashMap<>();
-            
-            final ConfigurationSection worldsSection = this.getConfig().getConfigurationSection("worlds");
-            if (worldsSection != null) {
-                for (final String worldName : worldsSection.getKeys(false)) {
-                    final ConfigurationSection worldConfig = worldsSection.getConfigurationSection(worldName);
-                    if (worldConfig != null && worldConfig.getBoolean("enabled", true)) {
-                        String mode = worldConfig.getString("activation_mode", "double_jump");
-                        modeCounts.put(mode, modeCounts.getOrDefault(mode, 0) + 1);
-                    }
+            final Map<String, Map<String, Integer>> outer = new HashMap<>();
+            for (final com.blaxk.spawnelytra.common.zone.Zone zone : this.zoneService.registry().all()) {
+                if (zone.enabled()) {
+                    final String mode = zone.activationMode().id();
+                    outer.computeIfAbsent(mode, k -> new HashMap<>()).merge(mode, 1, Integer::sum);
                 }
             }
-            
-            final Map<String, Map<String, Integer>> outer = new HashMap<>();
-            for (final Map.Entry<String, Integer> entry : modeCounts.entrySet()) {
-                final Map<String, Integer> inner = new HashMap<>();
-                inner.put(entry.getKey(), entry.getValue());
-                outer.put(entry.getKey(), inner);
-            }
-            
             return outer;
         }));
 
         metrics.addCustomChart(new DrilldownPie("boost_direction", () -> {
-            final Map<String, Integer> directionCounts = new HashMap<>();
-            
-            final ConfigurationSection worldsSection = this.getConfig().getConfigurationSection("worlds");
-            if (worldsSection != null) {
-                for (final String worldName : worldsSection.getKeys(false)) {
-                    final ConfigurationSection worldConfig = worldsSection.getConfigurationSection(worldName);
-                    if (worldConfig != null && worldConfig.getBoolean("enabled", true)) {
-                        final ConfigurationSection boostSection = worldConfig.getConfigurationSection("boost");
-                        if (boostSection != null) {
-                            String direction = boostSection.getString("direction", "forward");
-                            directionCounts.put(direction, directionCounts.getOrDefault(direction, 0) + 1);
-                        }
-                    }
+            final Map<String, Map<String, Integer>> outer = new HashMap<>();
+            for (final com.blaxk.spawnelytra.common.zone.Zone zone : this.zoneService.registry().all()) {
+                if (zone.enabled()) {
+                    final String dir = zone.boost().direction().id();
+                    outer.computeIfAbsent(dir, k -> new HashMap<>()).merge(dir, 1, Integer::sum);
                 }
             }
-            
-            final Map<String, Map<String, Integer>> outer = new HashMap<>();
-            for (final Map.Entry<String, Integer> entry : directionCounts.entrySet()) {
-                final Map<String, Integer> inner = new HashMap<>();
-                inner.put(entry.getKey(), entry.getValue());
-                outer.put(entry.getKey(), inner);
-            }
-            
             return outer;
         }));
     }
@@ -1026,29 +959,29 @@ public final class Main extends JavaPlugin implements Listener {
     }
 
     private void saveLanguageFiles() {
-        SchedulerUtil.runAsync(this, () -> {
-            final File langDir = new File(this.getDataFolder(), "lang");
-            if (!langDir.exists() && !langDir.mkdirs()) {
-                this.getLogger().warning("Failed to create language directory");
-                return;
-            }
+        // Synchronous on purpose: LanguageUpdater and MessageUtil read/write the same files right after this
+        // call; the former async version raced them (mkdirs failure on first boot, half-written files).
+        final File langDir = new File(this.getDataFolder(), "lang");
+        if (!langDir.mkdirs() && !langDir.isDirectory()) {
+            this.getLogger().warning("Failed to create language directory");
+            return;
+        }
 
-            final String[] languages = {"en", "de", "es", "fr", "pl"};
-            for (final String lang : languages) {
-                final File langFile = new File(langDir, lang + ".yml");
-                if (langFile.exists()) {
+        final String[] languages = {"en", "de", "es", "fr", "pl"};
+        for (final String lang : languages) {
+            final File langFile = new File(langDir, lang + ".yml");
+            if (langFile.exists()) {
+                continue;
+            }
+            try (final InputStream in = this.getResource("lang/" + lang + ".yml")) {
+                if (in == null) {
                     continue;
                 }
-                try (final InputStream in = this.getResource("lang/" + lang + ".yml")) {
-                    if (in == null) {
-                        continue;
-                    }
-                    java.nio.file.Files.write(langFile.toPath(), in.readAllBytes());
-                } catch (final IOException e) {
-                    this.getLogger().warning("Failed to write language file " + lang + ".yml: " + e.getMessage());
-                }
+                java.nio.file.Files.write(langFile.toPath(), in.readAllBytes());
+            } catch (final IOException e) {
+                this.getLogger().warning("Failed to write language file " + lang + ".yml: " + e.getMessage());
             }
-        });
+        }
     }
 
     public PlayerDataManager getPlayerDataManager() {
@@ -1059,11 +992,7 @@ public final class Main extends JavaPlugin implements Listener {
         return this.tempElytraManager;
     }
 
-    public com.blaxk.spawnelytra.setup.SetupManager getSetupManager() {
-        return this.setupManager;
-    }
-
-    public void reload() {
+    public synchronized void reload() {
         this.reloadConfig();
         MessageUtil.loadMessages(this);
         BedrockSupport.reloadSettings(this);
@@ -1071,22 +1000,12 @@ public final class Main extends JavaPlugin implements Listener {
         if (tempElytraManager != null) {
             this.tempElytraManager.restoreAll();
         }
-
-        if (setupManager != null) {
-            this.setupManager.stopAll();
+        if (this.editorManager != null) {
+            this.editorManager.stopAll(false);
         }
-
-        for (final SpawnElytra instance : this.worldInstances.values()) {
-            if (instance != null) {
-                for (final Player player : Bukkit.getOnlinePlayers()) {
-                    instance.cleanupPlayer(player);
-                    instance.stopVisualization(player);
-                }
-            }
-        }
-        this.worldInstances.clear();
-
-        this.loadWorldConfigurations();
+        this.cleanupFlightForOnlinePlayers();
+        this.zoneService.load();
+        this.registerTierPermissions();
     }
 
     private class VersionChecker {
@@ -1097,7 +1016,7 @@ public final class Main extends JavaPlugin implements Listener {
         private void tick() {
             try {
                 final String latest = Main.this.fetchLatestVersionNumber();
-                if (!Main.CURRENT_VERSION.equals(latest)) {
+                if (Main.compareVersions(latest, Main.CURRENT_VERSION) > 0) {
                     Main.this.latestVersion = latest;
                     Main.this.updateAvailable = true;
 
@@ -1135,6 +1054,28 @@ public final class Main extends JavaPlugin implements Listener {
                 Main.this.getLogger().warning(MessageUtil.plain("failed_update_check",
                         Placeholder.unparsed("error_message", sanitized)));
             }
+        }
+    }
+
+    /** Numeric comparison of dotted versions ("1.10" > "1.9"); non-numeric parts compare as 0. */
+    static int compareVersions(final String a, final String b) {
+        final String[] pa = a == null ? new String[0] : a.split("[.+-]");
+        final String[] pb = b == null ? new String[0] : b.split("[.+-]");
+        for (int i = 0; i < Math.max(pa.length, pb.length); i++) {
+            final int x = i < pa.length ? Main.parseVersionPart(pa[i]) : 0;
+            final int y = i < pb.length ? Main.parseVersionPart(pb[i]) : 0;
+            if (x != y) {
+                return Integer.compare(x, y);
+            }
+        }
+        return 0;
+    }
+
+    private static int parseVersionPart(final String part) {
+        try {
+            return Integer.parseInt(part.replaceAll("[^0-9]", ""));
+        } catch (final NumberFormatException e) {
+            return 0;
         }
     }
 

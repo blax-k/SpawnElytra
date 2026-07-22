@@ -1,0 +1,26 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.blaxk.spawnelytra.fabric.mixin",
+  "compatibilityLevel": "${java}",
+  "mixins": [
+    "AbstractContainerMenuMixin",
+    "BlockDisplayAccessor",
+    "DisplayAccessor",
+    "EntityAccessor",
+    "EntityInvoker",
+    "EntityMixin",
+    "ItemEntityMixin",
+    "LivingEntityMixin",
+    "PlayerAdvancementsMixin",
+    "PlayerListMixin",
+    "PlayerMixin",
+    "ServerCommonPacketListenerImplMixin",
+    "ServerGamePacketListenerImplMixin",
+    "ServerPlayerMixin",
+    "TextDisplayAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -6,6 +6,9 @@
 
 package com.blaxk.spawnelytra.integration;
 
+import com.blaxk.spawnelytra.common.stats.StatsFormat;
+import com.blaxk.spawnelytra.common.tier.PermissionTier;
+
 import com.blaxk.spawnelytra.Main;
 import com.blaxk.spawnelytra.data.PlayerDataManager;
 import com.blaxk.spawnelytra.listener.SpawnElytra;
@@ -52,35 +55,33 @@ public class PlaceholderAPIIntegration extends PlaceholderExpansion {
         if (player == null) {
             return "";
         }
-
-        if ("fly_count".equals(identifier)) {
-            return String.valueOf(this.playerDataManager.getPlayerData(player.getUniqueId()).getFlyCount());
+        final PlayerDataManager.PlayerData data = this.playerDataManager.getPlayerData(player.getUniqueId());
+        final SpawnElytra elytra = this.plugin.getSpawnElytra();
+        switch (identifier) {
+            case "fly_count":
+                return String.valueOf(data.getFlyCount());
+            case "boost_count":
+                return String.valueOf(data.getBoostCount());
+            case "total_count":
+                return String.valueOf(data.getFlyCount() + data.getBoostCount());
+            case "flying":
+                return String.valueOf(elytra != null && elytra.isFlying(player));
+            case "in_area":
+                return String.valueOf(elytra != null && !elytra.currentZoneName(player).isEmpty());
+            case "boosts_remaining":
+                return String.valueOf(elytra != null ? elytra.getBoostsRemaining(player) : 0);
+            case "zone":
+                return elytra != null ? elytra.currentZoneName(player) : "";
+            case "enabled":
+                return String.valueOf(data.isEnabled());
+            case "tier": {
+                final PermissionTier tier = this.plugin.getZoneService().tierOf(player);
+                return tier == null ? "" : tier.name();
+            }
+            default: {
+                final String stat = StatsFormat.placeholder(data.stats(), identifier);
+                return stat;
+            }
         }
-
-        if ("boost_count".equals(identifier)) {
-            return String.valueOf(this.playerDataManager.getPlayerData(player.getUniqueId()).getBoostCount());
-        }
-
-        if ("total_count".equals(identifier)) {
-            final PlayerDataManager.PlayerData data = this.playerDataManager.getPlayerData(player.getUniqueId());
-            return String.valueOf(data.getFlyCount() + data.getBoostCount());
-        }
-
-        if ("flying".equals(identifier)) {
-            final SpawnElytra instance = this.plugin.getSpawnElytraInstance(player.getWorld().getName());
-            return String.valueOf(instance != null && instance.isFlying(player));
-        }
-
-        if ("in_area".equals(identifier)) {
-            final SpawnElytra instance = this.plugin.getSpawnElytraInstance(player.getWorld().getName());
-            return String.valueOf(instance != null && instance.isInSpawnArea(player));
-        }
-
-        if ("boosts_remaining".equals(identifier)) {
-            final SpawnElytra instance = this.plugin.getSpawnElytraInstance(player.getWorld().getName());
-            return String.valueOf(instance != null ? instance.getBoostsRemaining(player) : 0);
-        }
-
-        return null;
     }
 }

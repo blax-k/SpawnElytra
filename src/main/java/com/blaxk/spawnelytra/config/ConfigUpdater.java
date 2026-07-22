@@ -6,6 +6,7 @@
 
 package com.blaxk.spawnelytra.config;
 
+import com.blaxk.spawnelytra.common.migration.ConfigMigrator;
 import com.blaxk.spawnelytra.util.BackupUtil;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -23,7 +24,7 @@ import java.util.regex.Pattern;
 
 public enum ConfigUpdater {
     ;
-    private static final String CURRENT_CONFIG_VERSION = "1.5";
+    private static final String CURRENT_CONFIG_VERSION = "1.6";
     
     public static boolean updateConfig(final JavaPlugin plugin) {
         final File configFile = new File(plugin.getDataFolder(), "config.yml");
@@ -57,20 +58,54 @@ public enum ConfigUpdater {
                 break;
         }
         
+        ConfigUpdater.migrateToZones(plugin, configFile);
+
         plugin.reloadConfig();
         return migratedFromV13;
+    }
+
+    /** 1.5 → 1.6: converts {@code worlds.*} into {@code zones.*} (shared core migration, see ConfigMigrator). */
+    private static void migrateToZones(final JavaPlugin plugin, final File configFile) {
+        if (!configFile.exists()) {
+            return;
+        }
+        final YamlConfiguration yaml = new YamlConfiguration();
+        try {
+            yaml.load(configFile);
+        } catch (final Exception e) {
+            plugin.getLogger().severe("Could not read config.yml for the 1.6 migration: " + e.getMessage());
+            return;
+        }
+        final ConfigMigrator.Result result = ConfigMigrator.migrate(new BukkitConfigView(yaml));
+        if (!result.changed()) {
+            for (final String line : result.log()) {
+                plugin.getLogger().warning(line);
+            }
+            return;
+        }
+        BackupUtil.backupFile(plugin, configFile, "config/config.yml");
+        try {
+            yaml.save(configFile);
+            ConfigUpdater.refreshVersionLabels(configFile);
+        } catch (final IOException e) {
+            plugin.getLogger().severe("Failed to save migrated config: " + e.getMessage());
+            return;
+        }
+        for (final String line : result.log()) {
+            plugin.getLogger().info(line);
+        }
     }
 
     private enum ConfigVersion {
         V1_2,
         V1_3,
-        /** The current nested {@code worlds.*} schema (introduced in 1.4, still used by 1.5+). */
+        /** The nested {@code worlds.*} schema (1.4/1.5) or the 1.6 {@code zones.*} schema. */
         MODERN,
         UNKNOWN
     }
     
     private static ConfigVersion detectConfigVersion(final FileConfiguration config) {
-        if (config.contains("worlds")) {
+        if (config.contains("zones") || config.contains("worlds")) {
             return ConfigVersion.MODERN;
         }
         
@@ -237,10 +272,6 @@ public enum ConfigUpdater {
             needsUpdate = true;
         }
 
-        if (!config.contains("worlds")) {
-            config.createSection("worlds");
-            needsUpdate = true;
-        }
 
         final ConfigurationSection worldsSection = config.getConfigurationSection("worlds");
         if (worldsSection != null) {

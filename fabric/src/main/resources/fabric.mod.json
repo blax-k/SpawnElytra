@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "spawnelytra",
+  "version": "${version}",
+  "name": "Spawn Elytra",
+  "description": "Players can use an invisible elytra in a defined area when double jumping",
+  "authors": [
+    "blaxk"
+  ],
+  "contact": {
+    "homepage": "https://modrinth.com/plugin/spawn-elytra",
+    "sources": "https://github.com/blax-k/SpawnElytra",
+    "issues": "https://github.com/blax-k/SpawnElytra/issues"
+  },
+  "license": "MPL-2.0",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.blaxk.spawnelytra.fabric.SpawnElytraMod"
+    ]
+  },
+  "mixins": [
+    "spawnelytra.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "${minecraft}",
+    "fabric-api-base": "*",
+    "fabric-lifecycle-events-v1": "*",
+    "fabric-command-api-v2": "*",
+    "fabric-networking-api-v1": "*",
+    "fabric-entity-events-v1": "*",
+    "fabric-events-interaction-v0": "*",
+    "fabric-data-attachment-api-v1": "*"
+  },
+  "suggests": {
+    "placeholder-api": "*",
+    "luckperms": "*"
+  }
+}

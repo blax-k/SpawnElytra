@@ -1,7 +1,7 @@
-﻿name: SpawnElytra
+name: SpawnElytra
 version: ${version}
 main: com.blaxk.spawnelytra.Main
-description: Players can use an invisible elytra in a defined area when double jumping
+description: Players can use an invisible elytra in configurable zones
 author: blaxk
 website: https://modrinth.com/plugin/spawn-elytra
 prefix: Spawn Elytra
@@ -13,8 +13,7 @@ softdepend: [PlaceholderAPI, floodgate, Geyser-Spigot]
 commands:
   spawnelytra:
     description: Main command for the Spawn Elytra plugin
-    usage: /spawnelytra [reload|info|update|visualize|settings|options|setup]
-    permission: spawnelytra.admin
+    usage: /spawnelytra [zone|global|toggle|stats|info|reload|update|visualize|settings|setup]
     aliases: [se]
 
 permissions:
@@ -27,3 +26,15 @@ permissions:
   spawnelytra.useboost:
     description: Allows players to use the boost feature
     default: true
+  spawnelytra.info:
+    description: Allows /spawnelytra info
+    default: true
+  spawnelytra.toggle:
+    description: Allows players to turn spawn elytra on or off for themselves (/spawnelytra toggle)
+    default: true
+  spawnelytra.stats:
+    description: Allows players to see their own statistics (/spawnelytra stats)
+    default: true
+  spawnelytra.stats.others:
+    description: Allows /spawnelytra stats <player>
+    default: op

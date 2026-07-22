@@ -7,6 +7,8 @@
 package com.blaxk.spawnelytra.util;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -40,7 +42,7 @@ public enum SchedulerUtil {
     private static final class BukkitTaskHandle implements TaskHandle {
         private final BukkitTask handle;
         BukkitTaskHandle(final BukkitTask handle) { this.handle = handle; }
-        @Override public void cancel() { if (handle != null) this.handle.cancel(); }
+        @Override public void cancel() { if (this.handle != null) this.handle.cancel(); }
     }
 
     private static final class FoliaTaskHandle implements TaskHandle {
@@ -82,6 +84,54 @@ public enum SchedulerUtil {
         return new BukkitTaskHandle(t);
     }
 
+    /** Whether the calling thread may touch blocks/entities at this location (main thread on Paper, owning region on Folia). */
+    public static boolean isOwnedByCurrentThread(final Location location) {
+        if (FOLIA) {
+            return Bukkit.isOwnedByCurrentRegion(location);
+        }
+        return Bukkit.isPrimaryThread();
+    }
+
+    /** Whether the calling thread owns this (non-player) entity. */
+    public static boolean isEntityOwnedByCurrentThread(final Entity entity) {
+        if (FOLIA) {
+            return Bukkit.isOwnedByCurrentRegion(entity);
+        }
+        return Bukkit.isPrimaryThread();
+    }
+
+    /** Runs the task on the thread owning {@code entity}: inline when already there, otherwise via its scheduler. */
+    public static void runForAnyEntity(final Plugin plugin, final Entity entity, final Runnable task) {
+        if (isEntityOwnedByCurrentThread(entity)) {
+            task.run();
+            return;
+        }
+        if (!plugin.isEnabled()) {
+            return;
+        }
+        if (FOLIA) {
+            entity.getScheduler().run(plugin, scheduledTask -> task.run(), null);
+        } else {
+            Bukkit.getScheduler().runTask(plugin, task);
+        }
+    }
+
+    /** Runs the task on the thread owning the region at {@code location} (main thread on Paper). */
+    public static void runAtLocation(final Plugin plugin, final Location location, final Runnable task) {
+        if (isOwnedByCurrentThread(location)) {
+            task.run();
+            return;
+        }
+        if (!plugin.isEnabled()) {
+            return;
+        }
+        if (FOLIA) {
+            Bukkit.getRegionScheduler().execute(plugin, location, task);
+        } else {
+            Bukkit.getScheduler().runTask(plugin, task);
+        }
+    }
+
     public static TaskHandle runAtEntityNow(final Plugin plugin, final Player entity, final Runnable task) {
         if (FOLIA) {
             final io.papermc.paper.threadedregions.scheduler.ScheduledTask t =
@@ -89,6 +139,34 @@ public enum SchedulerUtil {
             return new FoliaTaskHandle(t);
         }
         return new BukkitTaskHandle(Bukkit.getScheduler().runTask(plugin, task));
+    }
+
+    /**
+     * Whether the calling thread may touch this player's state: the main thread on Paper,
+     * the owning region thread (or the shutdown thread) on Folia.
+     */
+    public static boolean isOwnedByCurrentThread(final Player entity) {
+        if (FOLIA) {
+            return Bukkit.isOwnedByCurrentRegion(entity);
+        }
+        return Bukkit.isPrimaryThread();
+    }
+
+    /**
+     * Runs a per-player mutation on the thread that owns the player. Runs inline when the caller
+     * already owns the player (always the case for Paper main-thread callers and for Folia shutdown),
+     * otherwise hops to the player's scheduler. Silently skipped when the plugin is already disabled
+     * or the player has left (Folia retires the entity scheduler).
+     */
+    public static void runForEntity(final Plugin plugin, final Player entity, final Runnable task) {
+        if (isOwnedByCurrentThread(entity)) {
+            task.run();
+            return;
+        }
+        if (!plugin.isEnabled()) {
+            return;
+        }
+        runAtEntityNow(plugin, entity, task);
     }
 
     public static TaskHandle runAtEntityLater(final Plugin plugin, final Player entity, final long delayTicks, final Runnable task) {

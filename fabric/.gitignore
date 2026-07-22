@@ -1,0 +1,6 @@
+# The repository root ignores *.jar; keep this build's wrapper jar tracked.
+!gradle/wrapper/gradle-wrapper.jar
+.gradle/
+build/
+run/
+versions/*/build/

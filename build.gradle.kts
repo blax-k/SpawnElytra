@@ -4,7 +4,18 @@ plugins {
 }
 
 group = "com.blaxk"
-version = "1.5"
+version = "1.6"
+
+// Shared platform-neutral core (also compiled into the Fabric build).
+sourceSets {
+    main {
+        java.srcDir("common/src/main/java")
+    }
+    test {
+        java.srcDir("common/src/test/java")
+        resources.srcDir("common/src/test/resources")
+    }
+}
 
 java {
     toolchain {
@@ -37,6 +48,14 @@ repositories {
 }
 
 val adventureVersion = "4.17.0"
+
+// Paper Dialog renderer (Paper 1.21.6+). Compiled in its own source set against a newer paper-api so the main
+// code keeps compiling (and binary-linking) against the 1.21 API. Only loaded at runtime when
+// io.papermc.paper.dialog.Dialog exists, so the jar keeps running on Paper/Folia 1.21-1.21.5 and Spigot.
+val dialog: SourceSet by sourceSets.creating {
+    compileClasspath += sourceSets.main.get().output
+}
+val dialogCompileOnly: Configuration by configurations.getting
 val adventurePlatformVersion = "4.3.4"
 
 dependencies {
@@ -46,11 +65,20 @@ dependencies {
     compileOnly("net.kyori:adventure-api:$adventureVersion")
     
     implementation("org.apache.commons:commons-lang3:3.18.0")
-    implementation("org.bstats:bstats-bukkit:3.0.2")
+    implementation("org.bstats:bstats-bukkit:3.2.1")
     implementation("net.kyori:adventure-text-minimessage:$adventureVersion")
     implementation("net.kyori:adventure-text-serializer-plain:$adventureVersion")
     implementation("net.kyori:adventure-platform-bukkit:$adventurePlatformVersion")
     implementation("com.google.code.gson:gson:2.11.0")
+
+    dialogCompileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+
+    // Unit tests of the shared core (common/src/test/java)
+    testImplementation(platform("org.junit:junit-bom:5.11.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.yaml:snakeyaml:2.2")
+    testImplementation("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT") // Bukkit YAML for adapter round-trip tests
 }
 
 tasks {
@@ -70,12 +98,17 @@ tasks {
     
     shadowJar {
         archiveClassifier.set("")
+        from(dialog.output)
         
         relocate("org.bstats", "com.blaxk.spawnelytra.metrics")
     }
     
     build {
         dependsOn(shadowJar)
+    }
+
+    test {
+        useJUnitPlatform()
     }
 
     jar {
@@ -85,4 +118,5 @@ tasks {
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
+    options.release.set(21)
 }

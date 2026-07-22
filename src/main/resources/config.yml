@@ -1,5 +1,5 @@
 # Spawn Elytra Plugin by blaxk
-# Plugin Version: 1.5
+# Plugin Version: 1.6
 # Modrinth: https://modrinth.com/plugin/spawn-elytra
 
 # ==========================================
@@ -12,6 +12,8 @@ language: en
 # Game mode restrictions
 game_modes:
   # Automatically disable elytra when player enters creative mode (This prevents buggy flying in Creative)
+  # If set to false, creative players can use spawn elytra too: inside a zone, double-jumping starts gliding
+  # instead of creative flight (outside zones creative flight works as usual)
   disable_in_creative: true
   # If you don't want to disable elytra in adventure mode, set this to false
   disable_in_adventure: false
@@ -24,7 +26,7 @@ fireworks:
 # Bedrock (Geyser/Floodgate) support
 bedrock:
   # Bedrock Edition cannot glide without a real elytra equipped. When enabled,
-  # Bedrock players inside the spawn area receive a temporary elytra. They use
+  # Bedrock players inside a zone receive a temporary elytra. They use
   # it like a normal elytra: jump, then press jump again while falling. Since
   # Bedrock has no offhand/F key, Bedrock players always boost by pressing sneak
   # while gliding.
@@ -36,10 +38,23 @@ messages:
   show_press_to_boost: true
   # Set to false to disable the "boost activated" message
   show_boost_activated: true
-  # Set to true to show an actionbar when Elytra is disabled in Creative mode
+  # Set to true to show an actionbar when Elytra is disabled in Creative mode (shown once when entering a zone)
   show_creative_disabled: false
   # Message style: classic or small_caps
   style: classic
+
+# Where boost hints are shown while gliding (can be overridden per zone):
+# actionbar: "Press F to boost" messages in the actionbar (like 1.5)
+# bossbar: a bossbar with the remaining boosts and the cooldown
+# none: no boost hints
+boost_display: actionbar
+
+# Admin menus (/se, zone settings, global settings)
+menus:
+  # auto: dialogs on servers that support them (1.21.6+), chat menus otherwise
+  # dialog: always use dialogs (falls back to chat if unsupported)
+  # chat: always use clickable chat menus
+  mode: auto
 
 # Visualization settings for /spawnelytra visualize command
 visualization:
@@ -54,7 +69,7 @@ visualization:
   # Enable enhanced particles (brighter colors, additional effects)
   enhanced_particles: true
 
-# Hunger consumption settings (global defaults, can be overridden per-world)
+# Hunger consumption settings (global defaults, can be overridden per-zone)
 hunger_consumption:
   # Enable hunger consumption while using the spawn elytra features
   enabled: false
@@ -79,48 +94,57 @@ hunger_consumption:
     # Hunger consumed each time the timer elapses
     hunger_cost: 1
 
+# Permission tiers: give players better boosts with the permission spawnelytra.tier.<name>
+# (not granted to anyone by default, not even OPs). The tier with the highest priority wins.
+# Every value is optional and overrides the zone value. Example:
+# permission_tiers:
+#   vip:
+#     priority: 10
+#     max_boosts: 3
+#     strength: 5.0
+#     boost_cooldown: 1
+#     launch_strength: 2.0
+permission_tiers: {}
+
 # ==========================================
-# WORLD-SPECIFIC SETTINGS
+# ZONES
 # ==========================================
 
-# Configure elytra settings per world
-worlds:
-  # If you want to add another world, copy the entire 'world' section and change the name and preferences
-  world:
-    # Enable spawn elytra in this world
+# A zone is a named area in one world where spawn elytra works. You can have many zones
+# in many worlds. Manage them in-game with /se (overview), /se zone create <name>,
+# /se zone edit <name> and /se zone set <name> <key> <value>.
+# Zone names: lowercase letters, digits, '_' and '-' (max. 32 characters).
+
+# Optional keys per zone (remove them to use the global value / no limit):
+#   min_y / max_y: height limits of the zone
+#   boost_display: actionbar, bossbar or none
+#   fireworks: { disable_in_spawn_elytra: true/false }
+#   hunger_consumption: same keys as the global hunger_consumption section
+zones:
+  spawn:
+    # World of this zone (e.g. world, world_nether, world_the_end)
+    world: world
+    # Enable spawn elytra in this zone
     enabled: true
+    # If zones overlap, the zone with the highest priority wins (same priority: alphabetical)
+    priority: 0
+
+    # Shape of the zone: circle, rectangle or polygon
+    # circle: uses 'center' and 'radius'
+    # rectangle: uses 'corner1' and 'corner2' ({x, z} each)
+    # polygon: uses 'points' (a list of at least 3 {x, z} points)
+    shape: circle
+    # Center of the circle: world_spawn (follows the world spawn point) or fixed coordinates {x, z}
+    center: world_spawn
+    # Radius of the circle in blocks
+    radius: 100
 
     # Activation mode for elytra:
     # double_jump: Player needs to double-press space to activate elytra
-    # auto: Automatically activates elytra when player has air below and is in spawn area
+    # auto: Automatically activates elytra when player has air below and is in the zone
     # sneak_jump: Player needs to sneak while jumping to activate elytra
     # f_key: Player needs to press F (swap hands) to activate elytra, this also boosts a player upwards on activation
     activation_mode: double_jump
-
-    # The radius around spawn where elytra boosting is enabled
-    # (only used when area_mode is 'circular' or spawn coords x2/y2/z2 are all 0)
-    radius: 100
-
-    # Spawn area configuration
-    spawn_area:
-      # Mode options: 'auto' or 'advanced'
-      # auto: Uses the world spawn point with radius
-      # advanced: Uses custom spawn coordinates defined below
-      mode: auto
-
-      # Area type: 'circular' or 'rectangular'
-      area_type: circular
-
-      # Primary spawn coordinates (center for circular, first corner for rectangular)
-      x: 0
-      y: 64
-      z: 0
-
-      # Secondary coordinates (only used for rectangular areas)
-      # Setting all to 0 uses circular area with radius instead
-      x2: 0
-      y2: 0
-      z2: 0
 
     # Boost settings
     boost:
