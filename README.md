@@ -250,6 +250,7 @@ worlds:
 |---------|-------------|------------|---------|
 | `/spawnelytra` or `/se` | Show help menu | None | All players |
 | `/spawnelytra reload` | Reload plugin configuration | `spawnelytra.admin` | Operators only |
+| `/spawnelytra update` | Download and install the latest release (requires server restart) | `spawnelytra.admin` | Operators only |
 | `/spawnelytra info` | Display plugin information | None | All players |
 | `/spawnelytra visualize [seconds]` | Visualize the spawn elytra area with particles | `spawnelytra.admin` | Operators only |
 | `/spawnelytra settings` | Open the interactive settings menu | `spawnelytra.admin` | Operators only |

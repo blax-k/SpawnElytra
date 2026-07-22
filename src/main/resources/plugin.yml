@@ -13,7 +13,7 @@ softdepend: [PlaceholderAPI, floodgate, Geyser-Spigot]
 commands:
   spawnelytra:
     description: Main command for the Spawn Elytra plugin
-    usage: /spawnelytra [reload|info|visualize|settings|options|setup]
+    usage: /spawnelytra [reload|info|update|visualize|settings|options|setup]
     permission: spawnelytra.admin
     aliases: [se]
 

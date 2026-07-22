@@ -1191,7 +1191,7 @@ public final class Main extends JavaPlugin implements Listener {
         }
 
         if (latestRelease == null) {
-            throw new IOException("No release versions found. huh?");
+            throw new IOException("No release versions found");
         }
         return latestRelease;
     }
