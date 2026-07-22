@@ -24,11 +24,10 @@ fireworks:
 # Bedrock (Geyser/Floodgate) support
 bedrock:
   # Bedrock Edition cannot glide without a real elytra equipped. When enabled,
-  # Bedrock players inside the spawn area receive a protected temporary elytra
-  # (their chestplate is stored safely and returned automatically - this is
-  # logout- and crash-proof). They deploy it like a normal elytra: jump, then
-  # press jump again while falling. Since Bedrock has no offhand/F key,
-  # Bedrock players always boost by pressing sneak while gliding.
+  # Bedrock players inside the spawn area receive a temporary elytra. They use
+  # it like a normal elytra: jump, then press jump again while falling. Since
+  # Bedrock has no offhand/F key, Bedrock players always boost by pressing sneak
+  # while gliding.
   enabled: true
 
 # Message settings
